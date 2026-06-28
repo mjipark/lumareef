@@ -2,7 +2,7 @@
   "name": "Luma Reef",
   "short_name": "LumaReef",
   "description": "Your personal underwater reef journal — track your mood, grow your reef.",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0d3a52",
