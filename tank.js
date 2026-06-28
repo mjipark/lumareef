@@ -296,7 +296,7 @@ function transitionToReef() {
         if (sideNav) sideNav.classList.remove('theme-dark');
 
         if (typeof updateIslandUI === 'function') {
-            updateIslandUI({ title: 'Surface Island' });
+            updateIslandUI({ title: 'Your Reef' });
         }
     }, 800);
 }

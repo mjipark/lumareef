@@ -18,18 +18,15 @@
 // journal.js (getJournalEntries). Must load after both.
 
 const ISLAND_STORAGE_KEY = 'lumareef_islands';
+const ISLAND_WEEKLY_KEY  = 'lumareef_weekly_islands';
 
-// ---- DEV/TEST MODE ----------------------------------------------------------
-// Flip this to false to go back to real behavior: one island per KST
-// calendar day, only after that day has actually ended.
+// ---- GENERATION MODE --------------------------------------------------------
+// ISLAND_DEV_MODE = true  → uses N-minute windows so you can demo without waiting for midnight.
+// ISLAND_DEV_MODE = false → real KST daily behavior (one island per day after midnight).
 //
-// While true, "days" are replaced with fixed-size time windows so you can
-// test island generation in minutes instead of waiting for midnight KST.
-// A window only "closes" (becomes eligible for an island) once the current
-// time has moved past its end -- the *current* window is always left open,
-// mirroring how "today" is never bundled in real mode.
+// Set to 30 minutes for submission demo so islands appear quickly.
 const ISLAND_DEV_MODE = true;
-const ISLAND_DEV_WINDOW_MINUTES = 1; // each "day" = this many minutes
+const ISLAND_DEV_WINDOW_MINUTES = 30; // each "day" = 30 minutes for demo
 
 // ---- KST day-bucketing helpers -------------------------------------------
 
@@ -187,13 +184,27 @@ async function summarizeDayWithClaude(dayEntries) {
     }
 }
 
-// ---- Mood -> color, matching agent.js's sentiment palette for consistency --
+// ---- Island type assignment ------------------------------------------------
+// Each mood maps to a unique island visual theme for diversity on the reef.
+// positive → tropical forest island
+// neutral  → sandy beach island
+// negative → icy iceberg
+// mixed    → volcanic rocky island
+// weekly   → grand archipelago (large merged form)
+
+const islandTypeByMood = {
+    positive: 'forest',
+    neutral:  'sand',
+    negative: 'iceberg',
+    mixed:    'volcanic',
+};
 
 const islandColorByMood = {
-    positive: 0xffb86b,
-    neutral: 0x8fb8b0,
-    negative: 0x6b7fa3,
-    mixed: 0xc9a7d1
+    positive: 0x5dbb6f,   // forest green
+    neutral:  0xe8c97a,   // warm sand
+    negative: 0xa8d8ea,   // icy blue
+    mixed:    0x8a6c5e,   // volcanic brown-red
+    weekly:   0xf7c59f,   // warm golden
 };
 
 // ---- Deterministic-but-scattered placement --------------------------------
@@ -237,25 +248,125 @@ function pickScatteredPosition(dateKey, existingPositions) {
     return { x: Math.cos(angle) * radius, y: -1.0, z: Math.sin(angle) * radius };
 }
 
-// ---- Three.js mesh creation -------------------------------------------------
+// ---- Three.js mesh creation — diverse island types -------------------------
 
-const islandRegistry = []; // [{ dateKey, mesh, record }]
+const islandRegistry = []; // [{ dateKey, mesh, extras:[], record }]
 
 function createIslandMesh(record) {
-    const color = islandColorByMood[record.mood] || islandColorByMood.neutral;
-    const mesh = createVoxel(1.0, 0.45, 1.0, record.position.x, record.position.y, record.position.z, color, 0x1d2d44);
+    const isWeekly = !!record.isWeekly;
+    const mood = record.mood || 'neutral';
+    const type = isWeekly ? 'weekly' : (islandTypeByMood[mood] || 'sand');
+    const px = record.position.x, py = record.position.y, pz = record.position.z;
+    const extras = []; // extra meshes added for this island (trees, spires, etc.)
+
+    // --- Base land platform ---
+    const baseW = isWeekly ? 1.8 : 1.0;
+    const baseH = isWeekly ? 0.5 : 0.4;
+    let baseColor, baseSideColor;
+
+    if (type === 'iceberg') {
+        baseColor = 0xd6f0f8; baseSideColor = 0x7ecce8;
+    } else if (type === 'volcanic') {
+        baseColor = 0x5a3a2a; baseSideColor = 0x3d2518;
+    } else if (type === 'forest') {
+        baseColor = 0x4c8c5e; baseSideColor = 0x2e6640;
+    } else if (type === 'weekly') {
+        baseColor = 0xf7c59f; baseSideColor = 0xc49060;
+    } else { // sand
+        baseColor = 0xe8c97a; baseSideColor = 0xc4a04e;
+    }
+
+    const mesh = createVoxel(baseW, baseH, baseW, px, py, pz, baseColor, baseSideColor);
     mesh.userData = { type: 'memoryIsland', dateKey: record.dateKey };
 
-    // Small floating marker on top so these read as distinct, tappable landmarks
-    // rather than just another shoreline voxel.
-    const markerGeo = new THREE.ConeGeometry(0.12, 0.28, 6);
-    const markerMat = new THREE.MeshLambertMaterial({ color: color, flatShading: true });
-    const marker = new THREE.Mesh(markerGeo, markerMat);
-    marker.position.set(record.position.x, record.position.y + 0.45, record.position.z);
-    marker.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-    scene.add(marker);
+    // --- Type-specific details ---
 
-    islandRegistry.push({ dateKey: record.dateKey, mesh, marker, record });
+    if (type === 'forest') {
+        // 2-3 blocky voxel trees
+        const treeCount = isWeekly ? 5 : 2 + Math.floor(seededRandom(record.dateKey)() * 2);
+        const rng = seededRandom(record.dateKey + '_tree');
+        for (let t = 0; t < treeCount; t++) {
+            const tx = px + (rng() - 0.5) * (baseW - 0.25);
+            const tz = pz + (rng() - 0.5) * (baseW - 0.25);
+            const trunkH = 0.2 + rng() * 0.15;
+            // trunk
+            const trunk = createVoxel(0.1, trunkH, 0.1, tx, py + baseH / 2 + trunkH / 2, tz, 0x7a5230, 0x5a3a18);
+            trunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+            extras.push(trunk);
+            // canopy
+            const canopySize = 0.22 + rng() * 0.1;
+            const canopy = createVoxel(canopySize, canopySize, canopySize, tx, py + baseH / 2 + trunkH + canopySize / 2, tz, 0x3a8c50, 0x256638);
+            canopy.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+            extras.push(canopy);
+        }
+    }
+
+    if (type === 'sand') {
+        // Small dune bump on top + a tiny palm-like spike
+        const dune = createVoxel(0.35, 0.15, 0.35, px + 0.15, py + baseH / 2 + 0.07, pz + 0.1, 0xf2dfa0, 0xd4b86c);
+        dune.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(dune);
+        // Palm trunk
+        const palmTrunk = createVoxel(0.07, 0.32, 0.07, px - 0.1, py + baseH / 2 + 0.16, pz - 0.05, 0x9b7a3a, 0x7a5a22);
+        palmTrunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(palmTrunk);
+        // Palm fronds (two flat wide-short blocks)
+        const frond1 = createVoxel(0.3, 0.06, 0.1, px - 0.1 + 0.15, py + baseH / 2 + 0.32, pz - 0.05, 0x56a86e, 0x3a7a4e);
+        frond1.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(frond1);
+        const frond2 = createVoxel(0.1, 0.06, 0.3, px - 0.1, py + baseH / 2 + 0.32, pz - 0.05 + 0.15, 0x56a86e, 0x3a7a4e);
+        frond2.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(frond2);
+    }
+
+    if (type === 'iceberg') {
+        // Jagged ice spires rising from the base
+        const rng = seededRandom(record.dateKey + '_ice');
+        const spireCount = isWeekly ? 6 : 3;
+        for (let s = 0; s < spireCount; s++) {
+            const sx = px + (rng() - 0.5) * (baseW - 0.2);
+            const sz = pz + (rng() - 0.5) * (baseW - 0.2);
+            const spH = 0.3 + rng() * 0.45;
+            const spW = 0.1 + rng() * 0.1;
+            const spire = createVoxel(spW, spH, spW, sx, py + baseH / 2 + spH / 2, sz, 0xeaf8ff, 0xb0e4f8);
+            spire.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+            extras.push(spire);
+        }
+    }
+
+    if (type === 'volcanic') {
+        // Dark cone peak + orange lava crack accent blocks
+        const coneH = isWeekly ? 0.7 : 0.5;
+        const cone = createVoxel(0.4, coneH, 0.4, px, py + baseH / 2 + coneH / 2, pz, 0x4a2a1a, 0x2e180e);
+        cone.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(cone);
+        // Top crater glow
+        const lava = createVoxel(0.18, 0.1, 0.18, px, py + baseH / 2 + coneH + 0.05, pz, 0xff6a2a, 0xcc3a00);
+        lava.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(lava);
+    }
+
+    if (type === 'weekly') {
+        // Grand archipelago: 3 satellite mini-islands around a larger central one
+        const rng = seededRandom(record.dateKey + '_weekly');
+        for (let k = 0; k < 3; k++) {
+            const angle = (k / 3) * Math.PI * 2 + rng() * 0.5;
+            const dist = 1.2 + rng() * 0.4;
+            const smx = px + Math.cos(angle) * dist;
+            const smz = pz + Math.sin(angle) * dist;
+            const smColor = [0xe8c97a, 0x4c8c5e, 0xd6f0f8][k];
+            const smSide  = [0xc4a04e, 0x2e6640, 0x7ecce8][k];
+            const sat = createVoxel(0.55, 0.3, 0.55, smx, py, smz, smColor, smSide);
+            sat.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+            extras.push(sat);
+        }
+        // Central peak
+        const peak = createVoxel(0.5, 0.55, 0.5, px, py + 0.5, pz, 0xd4a870, 0xa07840);
+        peak.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(peak);
+    }
+
+    islandRegistry.push({ dateKey: record.dateKey, mesh, extras, record });
     return mesh;
 }
 
@@ -301,6 +412,142 @@ async function generateMissingIslands() {
     }
 }
 
+// ---- Weekly Merge -----------------------------------------------------------
+// After each Sunday midnight KST (or every 7 windows in dev mode), all islands
+// from the past week are merged into one grand 'weekly' archipelago island.
+// The individual daily islands remain visible; the weekly one is added on top.
+
+function getSavedWeeklyIslands() {
+    try {
+        const raw = localStorage.getItem(ISLAND_WEEKLY_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+
+function saveWeeklyIsland(record) {
+    const all = getSavedWeeklyIslands();
+    all[record.dateKey] = record;
+    localStorage.setItem(ISLAND_WEEKLY_KEY, JSON.stringify(all));
+}
+
+// In KST: returns the ISO week start key (Monday) for a given date
+function getKstWeekKey(isoOrDate) {
+    const d = (isoOrDate instanceof Date) ? isoOrDate : new Date(isoOrDate);
+    const kst = new Date(d.getTime() + KST_OFFSET_MS);
+    const day = kst.getUTCDay(); // 0=Sun,1=Mon...
+    const monday = new Date(kst);
+    monday.setUTCDate(kst.getUTCDate() - ((day + 6) % 7));
+    return `week-${monday.getUTCFullYear()}-${String(monday.getUTCMonth()+1).padStart(2,'0')}-${String(monday.getUTCDate()).padStart(2,'0')}`;
+}
+
+function getCurrentWeekKey() {
+    return ISLAND_DEV_MODE
+        ? `week-dev-${Math.floor(Date.now() / (ISLAND_DEV_WINDOW_MINUTES * 60 * 1000 * 7))}`
+        : getKstWeekKey(new Date());
+}
+
+const WEEKLY_SYSTEM_PROMPT = `You are reading a collection of daily memory island summaries from a week in the journaling app LUMA REEF. Each island represents one day. Merge them into a single weekly reflection. Respond with ONLY a JSON object in this exact shape:
+{"title": "2-4 word evocative weekly concept", "summary": "2-3 sentence warm reflection on the whole week", "mood": "positive" | "neutral" | "negative" | "mixed", "advice": "One gentle encouraging sentence for the week ahead"}
+No other text outside the JSON.`;
+
+async function generateWeeklyMergeIfNeeded() {
+    const saved = getSavedIslands();
+    const allRecords = Object.values(saved);
+    if (allRecords.length < 2) return; // need at least 2 daily islands to merge
+
+    // Group daily islands by week key, skip the current open week
+    const currentWeekKey = getCurrentWeekKey();
+    const weekGroups = {};
+    allRecords.forEach(r => {
+        const wKey = ISLAND_DEV_MODE
+            ? `week-dev-${Math.floor(parseInt((r.dateKey || '').replace('dev-', '') || '0', 10) / 7)}`
+            : getKstWeekKey(r.createdAt || r.dateKey);
+        if (wKey === currentWeekKey) return; // don't close the current week
+        if (!weekGroups[wKey]) weekGroups[wKey] = [];
+        weekGroups[wKey].push(r);
+    });
+
+    const savedWeekly = getSavedWeeklyIslands();
+    const existingPositions = Object.values(savedWeekly).map(r => r.position)
+        .concat(allRecords.map(r => r.position));
+
+    for (const [wKey, records] of Object.entries(weekGroups)) {
+        if (savedWeekly[wKey]) continue; // already merged this week
+        if (records.length < 2) continue; // need at least 2 days
+
+        // Summarize the week via AI
+        const weekText = records.map((r, i) => `Day ${i+1} (${r.title}): ${r.summary}`).join('\n\n');
+        let summary = { title: 'A Week Remembered', summary: 'A week of reflections.', mood: 'neutral', advice: 'Keep going.' };
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    system: WEEKLY_SYSTEM_PROMPT,
+                    max_tokens: 300,
+                    messages: [{ role: 'user', content: weekText }]
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+                const parsed = JSON.parse(text.trim().replace(/^```json\s*/i,'').replace(/```$/,'').trim());
+                if (parsed.title) summary = parsed;
+            }
+        } catch (err) { console.warn('Weekly merge summarization failed:', err); }
+
+        const position = pickScatteredPosition(wKey, existingPositions);
+        existingPositions.push(position);
+
+        // Weekly islands sit slightly higher to stand out
+        position.y = -0.8;
+
+        const weeklyRecord = {
+            dateKey: wKey,
+            isWeekly: true,
+            title: summary.title,
+            summary: summary.summary,
+            mood: summary.mood,
+            advice: summary.advice,
+            entryIds: records.flatMap(r => r.entryIds || []),
+            position,
+            createdAt: new Date().toISOString()
+        };
+        saveWeeklyIsland(weeklyRecord);
+        createIslandMesh(weeklyRecord);
+        console.log(`[islands.js] Weekly merge created: ${wKey}`);
+    }
+}
+
+function loadSavedWeeklyIslandsIntoScene() {
+    const saved = getSavedWeeklyIslands();
+    Object.values(saved).forEach(record => createIslandMesh(record));
+}
+
+// Also support touch tap on canvas for mobile island clicking
+function initIslandTouchHandling() {
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!canvasContainer) return;
+    canvasContainer.addEventListener('touchend', (event) => {
+        if (typeof activeScene !== 'undefined' && activeScene !== 'reef') return;
+        if (typeof isSubmerged !== 'undefined' && isSubmerged) return;
+        if (islandRegistry.length === 0) return;
+        const touch = event.changedTouches[0];
+        const rect = canvasContainer.getBoundingClientRect();
+        if (!islandPointer || !islandRaycaster) return;
+        islandPointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        islandPointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+        islandRaycaster.setFromCamera(islandPointer, camera);
+        const hits = islandRaycaster.intersectObjects(getIslandClickableMeshes());
+        if (hits.length > 0) {
+            event.stopPropagation();
+            const dateKey = hits[0].object.userData.dateKey;
+            const found = islandRegistry.find(e => e.dateKey === dateKey);
+            if (found) openIslandWidget(found.record, touch.clientX, touch.clientY);
+        }
+    }, true);
+}
+
 // ---- Click handling (raycasting against islandRegistry's meshes) ----------
 // Wired up separately from app.js's existing canvas-click (the dive trigger)
 // so a click on an island opens its widget instead of submerging the scene.
@@ -312,7 +559,7 @@ function getIslandClickableMeshes() {
     const list = [];
     islandRegistry.forEach(entry => {
         list.push(entry.mesh);
-        list.push(entry.marker);
+        (entry.extras || []).forEach(e => list.push(e));
     });
     return list;
 }
@@ -424,17 +671,27 @@ document.addEventListener('click', (event) => {
 
 function tryBootIslands() {
     if (typeof createVoxel !== 'function' || typeof THREE === 'undefined') {
-        // Not ready yet — retry in 100ms
         setTimeout(tryBootIslands, 100);
         return;
     }
     loadSavedIslandsIntoScene();
+    loadSavedWeeklyIslandsIntoScene();
     initIslandClickHandling();
-    generateMissingIslands(); // fire-and-forget; new islands pop in once Gemini responds
+    initIslandTouchHandling();
+    generateMissingIslands();
+    generateWeeklyMergeIfNeeded();
+
+    // Re-check periodically — every 30min in demo mode, every hour in real mode
+    const checkInterval = ISLAND_DEV_MODE
+        ? ISLAND_DEV_WINDOW_MINUTES * 60 * 1000
+        : 60 * 60 * 1000; // 1 hour
+    setInterval(() => {
+        generateMissingIslands();
+        generateWeeklyMergeIfNeeded();
+    }, checkInterval);
 
     if (ISLAND_DEV_MODE) {
-        console.log(`[islands.js] DEV MODE: ${ISLAND_DEV_WINDOW_MINUTES}-minute windows instead of KST days. Checking for newly-closed windows every ${ISLAND_DEV_WINDOW_MINUTES} minute(s).`);
-        setInterval(generateMissingIslands, ISLAND_DEV_WINDOW_MINUTES * 60 * 1000);
+        console.log(`[islands.js] Demo mode: ${ISLAND_DEV_WINDOW_MINUTES}-min windows. Checking every ${ISLAND_DEV_WINDOW_MINUTES} min.`);
     }
 }
 

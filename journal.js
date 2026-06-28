@@ -241,13 +241,22 @@ async function submitJournalEntry(text, images = [], onStatusUpdate) {
             spawnFromAnalysis(analysis);
         }
 
-        if (onStatusUpdate) onStatusUpdate('Checked in just now');
+        // Reef Forecast: translate mood into a living, reef-flavoured vibe label
+        const moodVibes = {
+            positive: '🌿 Calm Waters today',
+            negative: '🧊 Restless Tide today',
+            mixed:    '🌊 Shifting Currents today',
+            neutral:  '🐚 Steady Reef today'
+        };
+        const vibeLabel = moodVibes[analysis && analysis.mood] || '✓ Checked in';
+        if (onStatusUpdate) onStatusUpdate(vibeLabel);
     } else if (onStatusUpdate) {
-        onStatusUpdate('Checked in just now');
+        onStatusUpdate('✓ Checked in just now');
     }
 
     return entry;
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const checkinBtn = document.getElementById('checkin-btn');
