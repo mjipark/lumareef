@@ -1688,3 +1688,47 @@ body {
 .island-widget.mood-neutral { border-left: 4px solid #8fb8b0; }
 .island-widget.mood-negative { border-left: 4px solid #6b7fa3; }
 .island-widget.mood-mixed { border-left: 4px solid #c9a7d1; }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE OVERRIDES
+   These rules only apply to screens smaller than 768px (phones & small tablets).
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Side Panel (Chat / Journal) Full Width & Padding for Nav */
+    .side-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .chat-panel-box, .side-panel-box {
+        /* Add padding to the bottom so the floating nav pill doesn't block content/input */
+        padding-bottom: 120px !important;
+    }
+    
+    /* 2. Check-in Modal Full Width */
+    .modal-box {
+        width: 90vw !important;
+        max-width: 400px !important;
+        padding: 24px;
+    }
+    
+    /* 3. Journal Page Adjustments */
+    .journal-scroll {
+        padding: 80px 16px 120px !important;
+    }
+    
+    .journal-top-row {
+        gap: 16px;
+    }
+    
+    /* 4. UI Layer positioning to avoid crowding */
+    #ui-layer {
+        top: 80px;
+        left: 16px;
+    }
+    
+    #month-title {
+        font-size: 24px;
+    }
+}
+

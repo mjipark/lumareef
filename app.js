@@ -274,7 +274,32 @@ window.addEventListener('keydown', (event) => {
         targetAngle = angles[currentAngleIndex];
         if (targetAngle > currentAngle) currentAngle += Math.PI * 2;
     }
-        
+});
+
+// Mobile touch swipe to rotate
+let touchStartX = 0;
+let touchEndX = 0;
+window.addEventListener('touchstart', e => {
+    // Only track touches on the canvas or main UI to avoid interfering with scrolling in side panels
+    if (e.target.closest('.side-panel') || e.target.closest('.journal-page') || e.target.closest('.modal-box')) return;
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+window.addEventListener('touchend', e => {
+    if (e.target.closest('.side-panel') || e.target.closest('.journal-page') || e.target.closest('.modal-box')) return;
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 50) { // minimum swipe distance threshold
+        if (diff < 0) { // swiped left -> rotate right
+            currentAngleIndex = (currentAngleIndex + 1) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle < currentAngle) currentAngle -= Math.PI * 2;
+        } else { // swiped right -> rotate left
+            currentAngleIndex = (currentAngleIndex - 1 + angles.length) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle > currentAngle) currentAngle += Math.PI * 2;
+        }
+    }
 });
 
 
