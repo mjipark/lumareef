@@ -4,9 +4,9 @@
 // Dismiss by pressing SPACE, or by clicking the bar itself.
 
 const guideMessages = {
-    home: "This is your Surface Island — it reflects your day-to-day life. Tap the water to dive into the Tank below.",
-    sanctuary: "Welcome to the Tank of Echoes. Every piece of coral here grew from one of your past check-ins.",
-    journal: "This is your Journal — a private log of everything you've checked in with. No one else can see it."
+    home: "Your Reef is alive. Each island you see is a memory — a day you checked in. Tap the ocean to dive deeper.",
+    sanctuary: "The Tank of Echoes. Every bubble here carries something you once said. Ask the fish anything.",
+    journal: "Your Journal — a quiet place to write. Every entry shapes the reef above."
 };
 
 let guideHideTimer = null;

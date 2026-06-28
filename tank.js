@@ -123,20 +123,121 @@ for (let i = 0; i < particleCount; i++) {
 }
 
 // Renders the tank scene; called from app.js's main animate() loop when activeScene === 'tank'
+
+// ---- Chat Bubble System -------------------------------------------------------
+// Each time the user sends a message in the Tank of Echoes, a glowing bubble
+// rises from the floor. 3-4 seconds later, a floating DOM tooltip appears and
+// tracks the bubble's projected screen position, summarizing the message.
+
+const chatBubbles = []; // { mesh, halo, speed, tooltip, labelReady, startY, createdAt }
+
+function truncateLabel(text, maxWords = 7) {
+    const words = text.trim().split(/\s+/);
+    if (words.length <= maxWords) return text.trim();
+    return words.slice(0, maxWords).join(' ') + '…';
+}
+
+function spawnChatBubble(messageText) {
+    // Random start position near the tank floor
+    const margin = 0.6;
+    const bx = (Math.random() - 0.5) * (tankSize - margin * 2);
+    const bz = (Math.random() - 0.5) * (tankSize - margin * 2);
+    const startY = -tankHalf + 0.3;
+
+    // Bubble mesh — slightly larger than ambient particles, distinctly glowing
+    const radius = 0.055 + Math.random() * 0.04;
+    const geo = new THREE.SphereGeometry(radius, 10, 10);
+    const mat = new THREE.MeshBasicMaterial({
+        color: 0xb8f0ff,
+        transparent: true,
+        opacity: 0.85
+    });
+    const bubble = new THREE.Mesh(geo, mat);
+    bubble.position.set(bx, startY, bz);
+
+    // Soft glow halo
+    const haloGeo = new THREE.SphereGeometry(radius * 2.8, 10, 10);
+    const haloMat = new THREE.MeshBasicMaterial({ color: 0xddfbff, transparent: true, opacity: 0.18 });
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    bubble.add(halo);
+    tankScene.add(bubble);
+
+    const speed = 0.004 + Math.random() * 0.003;
+    const swayOffset = Math.random() * Math.PI * 2;
+    const label = truncateLabel(messageText);
+    const delay = 3000 + Math.random() * 1000; // 3-4 second delay
+
+    const entry = { mesh: bubble, halo: halo, speed, swayOffset, tooltip: null, labelReady: false, startY, label };
+    chatBubbles.push(entry);
+
+    // After delay, create the DOM tooltip
+    setTimeout(() => {
+        const tip = document.createElement('div');
+        tip.className = 'tank-bubble-tooltip';
+        tip.textContent = label;
+        document.body.appendChild(tip);
+        entry.tooltip = tip;
+        // Fade it in
+        requestAnimationFrame(() => { tip.style.opacity = '1'; });
+    }, delay);
+}
+
+// Projects a 3D tank position to screen coords, used to track tooltip position
+function projectTankToScreen(position) {
+    const vec = position.clone().project(tankCamera);
+    const canvas = document.getElementById('canvas-container');
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (vec.x + 1) / 2 * rect.width + rect.left,
+        y: -(vec.y - 1) / 2 * rect.height + rect.top
+    };
+}
+
+
 function renderTankScene() {
     if (typeof animateLifeforms === 'function') {
         animateLifeforms(tankLifeforms);
     }
 
-    // Gentle upward drift + sideways sway for the glowing particles
+    // Gentle upward drift + sideways sway for the glowing ambient particles
     const elapsed = Date.now() * 0.001;
     tankParticles.forEach(p => {
         p.mesh.position.y = p.baseY + Math.sin(elapsed * p.speed + p.offset) * p.driftRadius;
         p.mesh.position.x += Math.sin(elapsed * 0.2 + p.offset) * 0.0008;
     });
 
+    // Animate chat bubbles rising up through the tank
+    for (let i = chatBubbles.length - 1; i >= 0; i--) {
+        const b = chatBubbles[i];
+        b.mesh.position.y += b.speed;
+        // Gentle side sway as it rises
+        b.mesh.position.x += Math.sin(elapsed * 0.8 + b.swayOffset) * 0.0012;
+
+        // Fade out and remove when it reaches the top of the tank
+        if (b.mesh.position.y > tankHalf - 0.1) {
+            tankScene.remove(b.mesh);
+            if (b.tooltip) {
+                b.tooltip.style.opacity = '0';
+                setTimeout(() => { if (b.tooltip) b.tooltip.remove(); }, 600);
+            }
+            chatBubbles.splice(i, 1);
+            continue;
+        }
+
+        // Track DOM tooltip to bubble's screen position
+        if (b.tooltip) {
+            const screen = projectTankToScreen(b.mesh.position);
+            if (screen) {
+                b.tooltip.style.left = (screen.x + 14) + 'px';
+                b.tooltip.style.top  = (screen.y - 20) + 'px';
+            }
+        }
+    }
+
     renderer.render(tankScene, tankCamera);
 }
+
 
 // Keeps the tank camera's aspect ratio in sync on window resize
 function resizeTankCamera(newWidth, newHeight) {

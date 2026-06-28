@@ -115,8 +115,14 @@ async function sendChatMessage(userText) {
     appendChatMessage('user', userText);
     chatHistory.push({ role: 'user', content: userText });
 
-    // 2. Local crisis check runs regardless of the model's response
+    // 2. Spawn a rising bubble in the Tank of Echoes for this message
+    if (typeof spawnChatBubble === 'function' && typeof activeScene !== 'undefined' && activeScene === 'tank') {
+        spawnChatBubble(userText);
+    }
+
+    // 3. Local crisis check runs regardless of the model's response
     const isCrisis = detectCrisisLanguage(userText);
+
 
     // 3. Show a "thinking" placeholder bubble with a spinning indicator
     const thinkingBubble = appendThinkingBubble();

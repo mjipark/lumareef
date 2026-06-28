@@ -419,14 +419,27 @@ document.addEventListener('click', (event) => {
 });
 
 // ---- Boot -------------------------------------------------------------------
+// Poll until createVoxel is ready (it's defined in app.js which loads first,
+// but on mobile the scripts can execute in parallel so we guard against a race).
 
-document.addEventListener('DOMContentLoaded', () => {
+function tryBootIslands() {
+    if (typeof createVoxel !== 'function' || typeof THREE === 'undefined') {
+        // Not ready yet — retry in 100ms
+        setTimeout(tryBootIslands, 100);
+        return;
+    }
     loadSavedIslandsIntoScene();
     initIslandClickHandling();
-    generateMissingIslands(); // fire-and-forget; new islands pop in once Claude responds
+    generateMissingIslands(); // fire-and-forget; new islands pop in once Gemini responds
 
     if (ISLAND_DEV_MODE) {
         console.log(`[islands.js] DEV MODE: ${ISLAND_DEV_WINDOW_MINUTES}-minute windows instead of KST days. Checking for newly-closed windows every ${ISLAND_DEV_WINDOW_MINUTES} minute(s).`);
         setInterval(generateMissingIslands, ISLAND_DEV_WINDOW_MINUTES * 60 * 1000);
     }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Small delay ensures app.js's synchronous top-level code (createVoxel, scene, etc.)
+    // has had a chance to run even on slower mobile JS engines
+    setTimeout(tryBootIslands, 200);
 });

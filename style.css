@@ -1713,41 +1713,90 @@ body {
    These rules only apply to screens smaller than 768px (phones & small tablets).
    ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. Side Panel (Chat / Journal) Full Width & Padding for Nav */
-    .side-panel {
+    /* 1. Chat panel: floating right-side overlay, not full width */
+    #chat-panel {
+        /* Float it in the top-right corner like a dialogue box */
+        top: 60px;
+        right: 12px;
+        bottom: 90px; /* stay above nav pill */
+        left: auto;
+        height: auto;
+        width: min(340px, calc(100vw - 24px));
+        transform: translateX(0) !important;
+    }
+
+    #chat-panel.hidden {
+        transform: translateX(calc(100% + 20px)) !important;
+    }
+
+    #chat-panel .side-panel-box {
+        border-radius: 20px;
+        padding: 16px 16px 16px;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #chat-panel .chat-panel-box {
+        padding: 0 !important;
+        height: 100%;
+    }
+
+    /* Journal page: full width is correct */
+    #journal-page {
         width: 100%;
-        max-width: 100%;
     }
-    
-    .chat-panel-box, .side-panel-box {
-        /* Add padding to the bottom so the floating nav pill doesn't block content/input */
-        padding-bottom: 120px !important;
-    }
-    
+
     /* 2. Check-in Modal Full Width */
     .modal-box {
         width: 90vw !important;
         max-width: 400px !important;
         padding: 24px;
     }
-    
+
     /* 3. Journal Page Adjustments */
     .journal-scroll {
         padding: 80px 16px 120px !important;
     }
-    
+
     .journal-top-row {
         gap: 16px;
     }
-    
+
     /* 4. UI Layer positioning to avoid crowding */
     #ui-layer {
         top: 80px;
         left: 16px;
     }
-    
+
     #month-title {
         font-size: 24px;
     }
 }
 
+/* ---- Tank of Echoes: floating bubble tooltips --------------------------------
+   Each time the user sends a chat message, a 3D bubble rises from the tank
+   floor. After 3-4 seconds, this DOM element pops in and follows the bubble
+   via JS projection, fading out when the bubble exits the top of the tank. */
+.tank-bubble-tooltip {
+    position: fixed;
+    z-index: 300;
+    max-width: 180px;
+    background: rgba(244, 252, 255, 0.82);
+    color: #1a4a5a;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11.5px;
+    line-height: 1.4;
+    padding: 7px 11px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(180, 230, 245, 0.55);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    white-space: normal;
+    word-break: break-word;
+}
