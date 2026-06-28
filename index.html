@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luma Reef</title>
+    <meta name="description" content="Your personal underwater reef journal — track your mood, grow your reef.">
+    <meta name="theme-color" content="#1a6b8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Luma Reef">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Register PWA service worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('LumaReef SW registered:', reg.scope))
+                    .catch(err => console.warn('SW registration failed:', err));
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="nav-logo">LUMA REEF</div>
+    </nav>
+
+    <!-- Floating vertical pill nav, docked to the right edge, for wide/iPad-style
+         screens. Same data-nav buttons as before, just relocated out of the
+         top bar -- app.js's click handler selects buttons by [data-nav], so
+         no behavior changes, only position/orientation. -->
+    <nav class="side-nav">
+        <ul class="nav-links">
+            <li><button type="button" class="active" data-nav="home" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
+                <span>Home</span>
+            </button></li>
+            <li><button type="button" data-nav="sanctuary" aria-label="Tank">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><path d="M3 11c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><circle cx="9" cy="6" r="2"/><path d="M11 6c1.8 0 3 .8 3 2"/></svg>
+                <span>Tank</span>
+            </button></li>
+            <li><button type="button" data-nav="journal" aria-label="Journal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L12 18l-3.5 1.87A1 1 0 0 1 7 19V6a2 2 0 0 1-1-2Z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/></svg>
+                <span>Journal</span>
+            </button></li>
+        </ul>
+    </nav>
+
+    <div id="start-overlay">
+        <div class="brand">
+            <h1>LUMA REEF</h1>
+            <p>AN AI-DRIVEN COGNITIVE SANCTUARY</p>
+        </div>
+
+        <div class="cube-stage" id="cube-stage">
+            <img src="assets/cube-float-1.png" alt="" class="float-cube fc-1" aria-hidden="true">
+            <img src="assets/cube-float-2.png" alt="" class="float-cube fc-2" aria-hidden="true">
+            <img src="assets/cube-float-3.png" alt="" class="float-cube fc-3" aria-hidden="true">
+            <img src="assets/cube-float-4.png" alt="" class="float-cube fc-4" aria-hidden="true">
+            <img src="assets/Island.png" alt="Luma reef voxel island cross-section" class="cube-image" id="cube-image">
+        </div>
+
+        <p class="cube-hint" id="cube-hint">Click on the island to begin</p>
+    </div>
+
+    <div id="canvas-container"></div>
+    <div id="scene-fade"></div>
+
+    <!-- Overlay UI shown once inside the 3D scene: island title/status + check-in entry point -->
+    <div id="ui-layer">
+        <div id="month-title">Surface Island</div>
+        <div id="status-text">No check-in yet today</div>
+        <button type="button" id="checkin-btn" class="checkin-btn">+ Check In</button>
+    </div>
+
+    <!-- Check-in modal: where the user writes a journal entry -->
+    <div id="checkin-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 class="modal-title">How are you feeling today?</h2>
+            <p class="modal-subtitle">Write whatever's on your mind. This stays private.</p>
+            <textarea id="checkin-textarea" class="checkin-textarea" placeholder="Today I..." maxlength="2000"></textarea>
+            <div class="modal-actions">
+                <button type="button" id="checkin-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+                <button type="button" id="checkin-submit" class="modal-btn modal-btn-primary">Save Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journal page: full-screen scrollable overlay. Now a read+write hub --
+         a calendar (circle-highlights days with entries) side-by-side with
+         a diary text area to check in directly from here, plus the entry
+         list below, filterable by the calendar's selected date. -->
+    <div id="journal-page" class="journal-page hidden">
+        <div class="journal-scroll">
+            <h1 class="journal-page-title">Journal</h1>
+            <p class="journal-page-subtitle">Write a new entry, or tap a date to revisit it.</p>
+
+            <div class="journal-top-row">
+                <!-- Calendar widget: liquid-glass card, month grid, circle
+                     marker on any day with at least one saved entry. -->
+                <div class="journal-calendar">
+                    <div class="journal-calendar-header">
+                        <button type="button" id="cal-prev-month" class="cal-nav-btn" aria-label="Previous month">&#8249;</button>
+                        <div class="journal-calendar-title" id="cal-month-label">Month Year</div>
+                        <button type="button" id="cal-next-month" class="cal-nav-btn" aria-label="Next month">&#8250;</button>
+                    </div>
+                    <div class="journal-calendar-weekdays">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div class="journal-calendar-grid" id="cal-grid">
+                        <!-- populated by journal.js -->
+                    </div>
+                    <button type="button" id="cal-clear-filter" class="cal-clear-btn hidden">Show all entries</button>
+                </div>
+
+                <!-- Diary notebook write area -->
+                <div class="journal-notebook" id="journal-notebook">
+                    <div class="notebook-overlay"></div>
+                    <div class="notebook-content">
+                        <div class="notebook-date-header" id="notebook-date-header"></div>
+                        <textarea id="journal-page-textarea" class="journal-page-textarea" placeholder="Dear diary..." maxlength="2000"></textarea>
+
+                        <!-- Image attachments strip -->
+                        <div class="notebook-attachments" id="notebook-attachments"></div>
+
+                        <div class="journal-write-actions">
+                            <div class="notebook-toolbar">
+                                <label class="notebook-attach-btn" for="notebook-img-input" title="Attach image">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    Photo
+                                </label>
+                                <input type="file" id="notebook-img-input" accept="image/*" multiple style="display:none">
+                                <span class="journal-write-status" id="journal-write-status"></span>
+                            </div>
+                            <button type="button" id="journal-page-submit" class="notebook-save-btn">Save Entry</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="journal-entry-list" class="journal-entry-list">
+                <!-- populated by journal.js -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Guide narration bar: cutscene-style explainer shown per-section -->
+    <div id="guide-bar" class="guide-bar hidden">
+        <div class="guide-bar-icon-frame">
+            <img src="assets/f2.png" alt="Guide fish" class="guide-bar-icon">
+        </div>
+        <div class="guide-bar-text" id="guide-bar-text"></div>
+        <div class="guide-bar-hint"><span class="key-cap">SPACE</span> to skip</div>
+    </div>
+
+    <!-- Talk-to-a-fish button: only shown while inside the Tank (tank scene) -->
+    <button type="button" id="talk-to-fish-btn" class="talk-to-fish-btn hidden">
+        <img src="assets/f2.png" alt="" class="talk-to-fish-icon">
+        Talk to a fish
+    </button>
+
+    <!-- Fish chat panel -->
+    <div id="chat-panel" class="side-panel hidden">
+        <div class="side-panel-box chat-panel-box">
+            <button type="button" class="panel-close" data-close-panel="chat-panel">&times;</button>
+            <div class="chat-header">
+                <img src="assets/f2.png" alt="" class="chat-header-icon">
+                <div>
+                    <h2 class="panel-title">A Reef Friend</h2>
+                    <p class="panel-subtitle">Here to listen, not to diagnose.</p>
+                </div>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-row">
+                <textarea id="chat-input" class="chat-input" placeholder="Say something..." rows="1"></textarea>
+                <button type="button" id="chat-send" class="modal-btn modal-btn-primary chat-send-btn">Send</button>
+            </div>
+            <p class="chat-disclaimer">This is an AI companion, not a therapist. If you're in crisis, please reach out to a real person or a crisis line.</p>
+        </div>
+    </div>
+
+    <audio id="bg-music" src="sounds/leberchSound.mp3" loop preload="auto"></audio>
+    <audio id="dive-sound" src="sounds/dive.mp3" preload="auto"></audio>
+    <audio id="underwater-ambience" src="sounds/underwater.mp3" loop preload="auto"></audio>
+
+    <script src="app.js"></script>
+    <script src="agent.js"></script>
+    <script src="videoAgent.js"></script>
+    <script src="tank.js"></script>
+    <script src="sentiment.js"></script>
+    <script src="journal.js"></script>
+    <script src="islands.js"></script>
+    <script src="guide.js"></script>
+    <script src="chat.js"></script>
+
+</body>
+</html>

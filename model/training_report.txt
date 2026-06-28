@@ -1,0 +1,13 @@
+Test accuracy: 0.652
+
+              precision    recall  f1-score   support
+
+    negative       0.62      0.62      0.62         8
+     neutral       0.83      0.71      0.77         7
+    positive       0.56      0.62      0.59         8
+
+    accuracy                           0.65        23
+   macro avg       0.67      0.65      0.66        23
+weighted avg       0.66      0.65      0.66        23
+
+Train size: 92, Test size: 23

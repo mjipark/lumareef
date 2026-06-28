@@ -1,0 +1,116 @@
+text,sentiment
+"Today was actually really good, I felt light for the first time in weeks",positive
+"I finally finished the project I've been putting off and it feels amazing",positive
+"Had coffee with my best friend and we just laughed for two hours",positive
+"I got a really kind message from my mom today and it made my whole week",positive
+"Went for a run this morning and my head feels so much clearer now",positive
+"I slept eight hours for the first time in ages and I feel like a new person",positive
+"My professor actually praised my essay in front of the class, I'm still smiling",positive
+"We adopted a kitten today and I haven't stopped smiling since",positive
+"I cooked dinner for my roommates and we all just talked for hours, it was lovely",positive
+"Got my exam results back and I did way better than I expected",positive
+"I called my grandmother and she sounded so happy to hear from me",positive
+"Spent the whole afternoon in the sun reading and it was exactly what I needed",positive
+"My team actually pulled together today and we shipped the feature on time",positive
+"I tried a new recipe and it turned out perfectly, small win but it counts",positive
+"Today I felt proud of myself for setting a boundary I'd been avoiding",positive
+"Reconnected with an old friend after years and it felt like no time had passed",positive
+"I went to the gym and hit a new personal best, feeling strong",positive
+"My little sister visited and we spent the whole day just being silly together",positive
+"I got accepted into the program I applied for, I can't stop grinning",positive
+"Watched the sunset from the rooftop and just felt grateful to be alive",positive
+"Today nothing major happened, just a regular Tuesday at work",neutral
+"Did laundry, cleaned the kitchen, ran some errands, nothing special",neutral
+"Had class, took notes, came home, made dinner, normal day overall",neutral
+"Spent the day mostly on my laptop catching up on emails",neutral
+"Went grocery shopping and then just stayed in for the rest of the evening",neutral
+"Nothing really stood out today, just kind of an in-between kind of day",neutral
+"I went to work, came home, watched some TV, pretty uneventful",neutral
+"Today was fine, not particularly good or bad, just steady",neutral
+"I read a few chapters of my book and then did some chores around the house",neutral
+"Had a few meetings today, mostly routine stuff, nothing exciting",neutral
+"I'm not sure how I feel about today, it just kind of passed by",neutral
+"Took the dog for a walk and then worked on some homework",neutral
+"Today was a typical Sunday, slow and quiet",neutral
+"I organized my desk and went through some old emails, fairly mundane",neutral
+"Went to the dentist for a routine checkup, everything was fine",neutral
+"Just a normal day of classes back to back, nothing memorable",neutral
+"Did some grocery shopping and meal prepped for the week",neutral
+"I spent the afternoon doing chores I'd been putting off",neutral
+"Nothing in particular happened today, just going through the motions",neutral
+"Worked from home, had lunch, finished a report, standard day",neutral
+"I've been feeling really overwhelmed with everything on my plate lately",negative
+"Failed my midterm today and I don't even know how to process it",negative
+"Had a huge fight with my partner and I don't know how to fix it",negative
+"I feel so lonely lately, like nobody actually checks in on me",negative
+"Today was exhausting, I just feel drained and empty",negative
+"I keep messing up at work and I'm scared I'm going to get fired",negative
+"My anxiety has been really bad this week and I can't shake it",negative
+"I cried in the bathroom at work today and had to pretend I was fine after",negative
+"I feel like I'm constantly disappointing everyone around me",negative
+"Lost my job today and I have no idea what I'm going to do now",negative
+"I haven't been sleeping and everything feels heavier than usual",negative
+"My best friend and I aren't talking anymore and it's been eating at me",negative
+"I feel stuck, like nothing I do is actually moving me forward",negative
+"Today was rough, I just felt sad for no clear reason the whole day",negative
+"I'm so stressed about money right now I can barely focus on anything else",negative
+"I said something I regret to my sister and I don't know how to apologize",negative
+"Everything feels like too much right now and I just want to disappear into my bed",negative
+"I got some bad news about my health today and I'm scared",negative
+"I feel like I'm failing at everything I try lately",negative
+"I'm so burnt out from work I don't even recognize myself anymore",negative
+"Got promoted today after months of hard work, I feel so validated",positive
+"Spent the evening journaling and it actually helped me think more clearly",positive
+"My therapist said I've made real progress and I believe it for once",positive
+"I finally said no to something that wasn't serving me, felt empowering",positive
+"We had a small family dinner and it was warm and easy, no drama at all",positive
+"I cleaned my whole apartment and now it feels like a fresh start",neutral
+"Took a walk during my lunch break, weather was decent",neutral
+"Watched a documentary tonight, fairly interesting but nothing life-changing",neutral
+"I submitted my assignment on time, that's about it for today",neutral
+"Spent some time tidying up my notes for next week",neutral
+"I skipped breakfast again and felt sluggish most of the morning",negative
+"My roommate has been distant lately and it's starting to worry me",negative
+"I feel invisible at work, like my contributions don't matter",negative
+"Couldn't focus on anything today, my mind kept drifting to worst-case scenarios",negative
+"I think I'm starting to dread going into the office every morning",negative
+"Had a really productive study session and actually feel ready for my exam",positive
+"My partner surprised me with my favorite meal and it made my whole day better",positive
+"I finished a 5k today and didn't think I had it in me, proud of myself",positive
+"Got a thoughtful text from an old mentor checking in on me out of nowhere",positive
+"Things finally feel like they're falling into place after a rough month",positive
+"Spent the day at the library, fairly productive but uneventful",neutral
+"I went to a work event, made small talk, nothing notable happened",neutral
+"Did some online shopping and watched a couple episodes of a show",neutral
+"Today was just admin stuff, paying bills and scheduling appointments",neutral
+"I had a quiet day at home, didn't do much of anything in particular",neutral
+"I snapped at my coworker today and I feel terrible about it",negative
+"I've been avoiding my friends because I don't have the energy to pretend I'm okay",negative
+"My landlord raised the rent again and I genuinely don't know how I'll manage",negative
+"I feel like I'm constantly behind no matter how hard I work",negative
+"Today I just felt numb, like I was going through the day on autopilot",negative
+"I got into an argument with my mom and we haven't spoken since",negative
+"I'm worried about my grades and it's keeping me up at night",negative
+"Everything that could go wrong today did, and I'm just exhausted",negative
+"I feel guilty for taking a day off even though I clearly needed it",negative
+"My energy has been so low lately and I don't know why",negative
+"Started a new hobby today and I actually really enjoyed it",positive
+"I helped a friend move and we ended up laughing the whole time",positive
+"Got really positive feedback on my presentation, I feel relieved and happy",positive
+"Spent time outside today and it genuinely boosted my mood",positive
+"I made peace with something I've been holding onto for a long time",positive
+"Today was just a regular school day, nothing too eventful",neutral
+"I ran some errands and caught up on a podcast, fairly average day",neutral
+"Had leftovers for dinner and worked on a personal project for a bit",neutral
+"Nothing really happened today, just a quiet stretch of normal life",neutral
+"I attended a routine meeting and then worked through my to-do list",neutral
+"I feel like I'm constantly putting on a brave face and it's tiring",negative
+"My sleep schedule is a mess and it's affecting everything else",negative
+"I don't feel like myself lately and I can't pinpoint why",negative
+"I keep comparing myself to everyone else and it's wearing me down",negative
+"Today felt heavier than usual, hard to explain why",negative
+"I reorganized my closet and it weirdly made me feel more in control",positive
+"My friend drove two hours just to check on me and it meant everything",positive
+"I finally finished the book I've been reading for months, felt satisfying",positive
+"Got through a hard conversation with my dad and we're on better terms now",positive
+"I treated myself to something small today and it lifted my mood a lot",positive
