@@ -1747,6 +1747,12 @@ body {
         flex-direction: column;
     }
 
+    #chat-panel .panel-close {
+        color: #ffffff;
+        opacity: 0.9;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
     /* Journal page: full width is correct */
     #journal-page {
         width: 100%;
@@ -1807,9 +1813,9 @@ body {
    via JS projection, fading out when the bubble exits the top of the tank. */
 .tank-bubble-tooltip {
     position: fixed;
-    z-index: 300;
+    z-index: 100;
     max-width: 180px;
-    background: rgba(244, 252, 255, 0.82);
+    background: rgba(244, 252, 255, 0.25);
     color: #1a4a5a;
     font-family: 'Helvetica Neue', Arial, sans-serif;
     font-size: 11.5px;
@@ -1820,9 +1826,16 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(180, 230, 245, 0.55);
-    pointer-events: none;
+    pointer-events: auto;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transform: scale(1);
+    transition: opacity 0.5s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease;
     white-space: normal;
     word-break: break-word;
+}
+
+.tank-bubble-tooltip:hover {
+    background: rgba(244, 252, 255, 0.85);
+    transform: scale(1.08);
+    z-index: 105;
 }
