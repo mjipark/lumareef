@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
             geminiReqBody.systemInstruction = systemInstruction;
         }
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
         
         // 2. Send request to Google's Gemini API
         const response = await fetch(geminiUrl, {
