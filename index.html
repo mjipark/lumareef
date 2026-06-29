@@ -51,6 +51,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L12 18l-3.5 1.87A1 1 0 0 1 7 19V6a2 2 0 0 1-1-2Z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/></svg>
                 <span>Journal</span>
             </button></li>
+            <li><button type="button" data-nav="about" aria-label="About">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>About</span>
+            </button></li>
         </ul>
     </nav>
 
@@ -74,11 +78,10 @@
     <div id="canvas-container"></div>
     <div id="scene-fade"></div>
 
-    <!-- Overlay UI shown once inside the 3D scene: island title/status + check-in entry point -->
+    <!-- Overlay UI shown once inside the 3D scene: reef title + mood forecast -->
     <div id="ui-layer">
         <div id="month-title">Your Reef</div>
-        <div id="status-text">No check-in yet today</div>
-        <button type="button" id="checkin-btn" class="checkin-btn">+ Check In</button>
+        <div id="status-text">Swipe to explore your memories</div>
     </div>
 
     <!-- Check-in modal: where the user writes a journal entry -->
@@ -148,6 +151,30 @@
 
             <div id="journal-entry-list" class="journal-entry-list">
                 <!-- populated by journal.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- About page: proposal and map -->
+    <div id="about-page" class="journal-page hidden">
+        <div class="journal-scroll">
+            <button type="button" class="panel-close" data-close-panel="about-page">&times;</button>
+            <h1 class="journal-page-title">About Luma Reef</h1>
+            <p class="journal-page-subtitle">Project Proposal and Conceptual Map</p>
+
+            <div class="journal-entry" style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 12px; font-size: 18px;">Project Explanation</h3>
+                <p class="journal-entry-text" id="about-proposal-text" style="white-space: pre-wrap;">(Your brief explanation/proposal will go here. Please paste the text in the chat, or upload a text file!)</p>
+            </div>
+
+            <div class="journal-entry">
+                <h3 style="margin-bottom: 12px; font-size: 18px;">Project Map</h3>
+                <div style="width: 100%; min-height: 200px; background: rgba(0,0,0,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px dashed rgba(255,255,255,0.4); margin-top: 10px;">
+                    <p style="opacity: 0.6; font-size: 14px; text-align: center; padding: 20px;" id="about-map-placeholder">
+                        (Map image will be placed here. Please upload your map image!)
+                    </p>
+                    <img id="about-map-img" src="" alt="Project Map" style="display: none; width: 100%; height: auto; border-radius: 8px;">
+                </div>
             </div>
         </div>
     </div>

@@ -56,6 +56,8 @@ function closeAllPanels() {
     document.querySelectorAll('.side-panel').forEach(panel => panel.classList.add('hidden'));
     const journalPage = document.getElementById('journal-page');
     if (journalPage) journalPage.classList.add('hidden');
+    const aboutPage = document.getElementById('about-page');
+    if (aboutPage) aboutPage.classList.add('hidden');
 }
 
 function renderJournalList() {
@@ -277,8 +279,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     checkinBtn.addEventListener('click', (event) => {
-        event.stopPropagation(); // don't let this trigger the dive-on-click handler in app.js
-        openModal();
+        event.stopPropagation();
+        // 'Write Today' goes straight to the Journal page — the real writing space
+        const journalPage = document.getElementById('journal-page');
+        if (journalPage) {
+            journalPage.classList.remove('hidden');
+            // Focus the notebook textarea after a brief transition
+            setTimeout(() => {
+                const ta = document.getElementById('journal-page-textarea');
+                if (ta) ta.focus();
+            }, 350);
+        }
     });
 
     cancelBtn.addEventListener('click', closeModal);
@@ -386,11 +397,22 @@ document.addEventListener('DOMContentLoaded', () => {
             pendingImages = [];
             renderAttachmentPreviews();
 
-            await submitJournalEntry(text, imagesToSave, (statusMsg) => {
-                if (pageStatus) pageStatus.innerText = statusMsg;
-            });
+            try {
+                await submitJournalEntry(text, imagesToSave, (statusMsg) => {
+                    if (pageStatus) pageStatus.innerText = statusMsg;
+                });
+                
+                // Show success briefly, keeping the journal panel open
+                setTimeout(() => {
+                    if (pageStatus) pageStatus.innerText = '';
+                }, 3000);
 
-            pageSubmitBtn.disabled = false;
+            } catch (err) {
+                console.error('Save failed:', err);
+                if (pageStatus) pageStatus.innerText = 'Error saving entry.';
+            } finally {
+                pageSubmitBtn.disabled = false;
+            }
         });
 
         // Same Cmd/Ctrl+Enter shortcut as the modal, for consistency

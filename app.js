@@ -6,9 +6,7 @@ const submergedHeight = -2.0;
 
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-
-// Set the deep sky background color
-scene.background = new THREE.Color(0xC1EBE9); 
+scene.background = null; // Transparent so CSS gradient can show through
 
 // Aspect calculation
 const width = container.clientWidth;
@@ -44,9 +42,11 @@ let currentHeight = baseHeight;
 let targetUpZ = 0;
 let currentUpZ = 0;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(width, height);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x000000, 0); // transparent clear color
 container.appendChild(renderer.domElement);
 
 // 2. Lighting System Configuration
@@ -229,6 +229,30 @@ for (let i = 0; i < shimmerCount; i++) {
 
 
 // 9. Randomly Shaped Voxel Clouds
+const leaves = [];
+for (let i = 0; i < 8; i++) {
+    const radius = 1.8 + Math.random() * 3.5; 
+    const angle = Math.random() * Math.PI * 2;
+    const posX = 0.3 + Math.cos(angle) * radius;
+    const posZ = 0.1 + Math.sin(angle) * radius;
+
+    const leafSize = 0.15 + Math.random() * 0.1;
+    const leaf = createVoxel(
+        leafSize, 0.02, leafSize,
+        posX, -1.02, posZ,          
+        0x5a7a50, 0x4a6a40,
+        0.9 
+    );
+    leaf.rotation.y = Math.random() * Math.PI;
+    
+    leaves.push({
+        mesh: leaf,
+        baseY: -1.02,
+        offset: Math.random() * Math.PI * 2,
+        speed: 0.8 + Math.random() * 0.5
+    });
+}
+
 const clouds = [];
 
 function buildRandomCloudCluster(baseX, baseY, baseZ) {
@@ -302,6 +326,50 @@ window.addEventListener('touchend', e => {
     }
 });
 
+// Mouse drag swipe
+let mouseStartX = 0;
+let isDragging = false;
+window.addEventListener('pointerdown', e => {
+    if (e.target.closest('.side-panel') || e.target.closest('.journal-page') || e.target.closest('.modal-box')) return;
+    mouseStartX = e.screenX;
+    isDragging = true;
+});
+
+window.addEventListener('pointerup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = e.screenX - mouseStartX;
+    if (Math.abs(diff) > 50) {
+        if (diff < 0) {
+            currentAngleIndex = (currentAngleIndex + 1) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle < currentAngle) currentAngle -= Math.PI * 2;
+        } else {
+            currentAngleIndex = (currentAngleIndex - 1 + angles.length) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle > currentAngle) currentAngle += Math.PI * 2;
+        }
+    }
+});
+
+// Trackpad wheel swipe
+let wheelTimeout = null;
+window.addEventListener('wheel', e => {
+    if (e.target.closest('.side-panel') || e.target.closest('.journal-page') || e.target.closest('.modal-box')) return;
+    if (Math.abs(e.deltaX) > 30 && !wheelTimeout) {
+        if (e.deltaX > 0) {
+            currentAngleIndex = (currentAngleIndex + 1) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle < currentAngle) currentAngle -= Math.PI * 2;
+        } else {
+            currentAngleIndex = (currentAngleIndex - 1 + angles.length) % angles.length;
+            targetAngle = angles[currentAngleIndex];
+            if (targetAngle > currentAngle) currentAngle += Math.PI * 2;
+        }
+        // Debounce trackpad events
+        wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 500);
+    }
+}, { passive: true });
 
 // activeScene controls which scene/camera the render loop draws each frame.
 // Defined here (not in tank.js) since app.js's render loop is what reads it.
@@ -356,8 +424,13 @@ function animate() {
 
         // Animate White Shimmer Blocks
         shimmers.forEach(s => {
-            s.mesh.position.y = s.baseY + Math.sin(elapsedTime * s.speed + s.offset) * 0.04;
+            s.mesh.position.y = s.baseY + Math.sin(elapsedTime * s.speed + s.offset) * 0.05;
             s.mesh.position.x += Math.sin(elapsedTime * 0.2 + s.offset) * 0.001;
+        });
+
+        leaves.forEach(l => {
+            l.mesh.position.y = l.baseY + Math.sin(elapsedTime * l.speed + l.offset) * 0.03;
+            l.mesh.position.x += Math.sin(elapsedTime * 0.1 + l.offset) * 0.0005;
         });
 
         // Animate Cloud Floating Drift loops
@@ -370,8 +443,11 @@ function animate() {
         if (typeof animateLifeforms === 'function') {
             animateLifeforms();
         }
-        const targetBg = isSubmerged ? new THREE.Color(0x003566) : new THREE.Color(0xC1EBE9);
-        scene.background.lerp(targetBg, 0.05);
+        
+        // Let CSS handle the background gradient smoothly. We just tell the renderer.
+        document.getElementById('canvas-container').style.background = isSubmerged ? 
+            'linear-gradient(to bottom, #001524, #003566)' : 
+            'linear-gradient(to bottom, #a1c4fd, #c2e9fb)';
 
         // If submerged, we fade out the clouds and scale up the water presence
         clouds.forEach(cloud => {
@@ -563,6 +639,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof openJournalPanel === 'function') openJournalPanel();
                 // Journal is a full-page dark gradient overlay, so nav icons
                 // go dark/white regardless of activeScene.
+                setNavTheme('dark');
+            } else if (section === 'about') {
+                const aboutPage = document.getElementById('about-page');
+                if (aboutPage) aboutPage.classList.remove('hidden');
                 setNavTheme('dark');
             }
 
