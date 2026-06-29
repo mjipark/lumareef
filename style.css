@@ -1730,6 +1730,7 @@ body {
         background: rgba(11, 31, 36, 0.85);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        z-index: 200;
     }
 
     #chat-panel.hidden {
@@ -1737,18 +1738,13 @@ body {
         opacity: 0;
     }
 
-    #chat-panel .side-panel-box {
-        border-radius: 0;
-        padding: 60px 16px 120px;
+    #chat-panel .chat-panel-box {
+        border-radius: 0 !important;
+        padding: 70px 16px 110px !important;
         height: 100%;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-    }
-
-    #chat-panel .chat-panel-box {
-        padding: 0 !important;
-        height: 100%;
     }
 
     /* Journal page: full width is correct */
