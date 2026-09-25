@@ -5,7 +5,7 @@
 
 const guideMessages = {
     home: "Your Reef is alive. Each island you see is a memory — a day you checked in. Tap the ocean to dive deeper.",
-    sanctuary: "The Tank of Echoes. Every bubble here carries something you once said. Ask the fish anything.",
+    sanctuary: "The Aquarium. Every coral here grew from one of your days, and jellyfish drift in on the quieter ones. Tap the water to release bubbles, or the glowing orb to talk to a fish.",
     journal: "Your Journal — a quiet place to write. Every entry shapes the reef above."
 };
 
@@ -44,16 +44,7 @@ function hideGuideBar() {
 // Decides whether the bar should use the light (navy text) or dark (white text)
 // variant, based on what's actually visible behind it right now.
 function getGuideTheme(section) {
-    // Tank nav directly means the dark tank scene
-    if (section === 'sanctuary') return 'theme-dark';
-    if (section === 'home') return 'theme-light';
-
-    // Journal is a full-page dark gradient overlay, so it always gets the
-    // dark guide-bar variant regardless of whatever scene is sitting
-    // underneath it.
-    if (section === 'journal') return 'theme-dark';
-
-    if (typeof activeScene !== 'undefined' && activeScene === 'tank') return 'theme-dark';
+    // Every scene uses the pastel palette now, so the light card always fits
     return 'theme-light';
 }
 

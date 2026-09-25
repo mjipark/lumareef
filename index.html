@@ -13,7 +13,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -40,15 +40,19 @@
          screens. Same data-nav buttons as before, just relocated out of the
          top bar -- app.js's click handler selects buttons by [data-nav], so
          no behavior changes, only position/orientation. -->
-    <nav class="side-nav">
+    <nav class="side-nav" aria-label="Main">
+        <span class="nav-indicator" aria-hidden="true"></span>
         <ul class="nav-links">
             <li><button type="button" class="active" data-nav="home" aria-label="Home">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
-                <span>Home</span>
+                <span>Reef</span>
             </button></li>
-            <li><button type="button" data-nav="sanctuary" aria-label="Tank">
+            <li><button type="button" data-nav="sanctuary" aria-label="Aquarium">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><path d="M3 11c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><circle cx="9" cy="6" r="2"/><path d="M11 6c1.8 0 3 .8 3 2"/></svg>
-                <span>Tank</span>
+                <span>Aquarium</span>
+            </button></li>
+            <li class="nav-orb-li"><button type="button" class="nav-orb" id="nav-orb" aria-label="Talk to a fish">
+                <span class="orb" aria-hidden="true"><i></i></span>
             </button></li>
             <li><button type="button" data-nav="journal" aria-label="Journal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L12 18l-3.5 1.87A1 1 0 0 1 7 19V6a2 2 0 0 1-1-2Z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/></svg>
@@ -75,8 +79,19 @@
             <img src="assets/Island.png" alt="Luma reef voxel island cross-section" class="cube-image" id="cube-image">
         </div>
 
-        <p class="cube-hint" id="cube-hint">Click on the island to begin</p>
+        <div class="enter-choices" id="enter-choices">
+            <button type="button" class="enter-btn enter-btn-primary" id="enter-sound">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+                Enter with sound
+            </button>
+            <button type="button" class="enter-btn enter-btn-quiet" id="enter-silent">Enter without sound</button>
+        </div>
+        <p class="cube-hint" id="cube-hint">or tap the island</p>
     </div>
+
+    <button type="button" id="sound-toggle" class="sound-toggle" aria-label="Mute sound" title="Sound on / off">
+        <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </button>
 
     <div id="canvas-container"></div>
     <div id="scene-fade"></div>
@@ -106,8 +121,9 @@
          list below, filterable by the calendar's selected date. -->
     <div id="journal-page" class="journal-page hidden">
         <div class="journal-scroll">
-            <h1 class="journal-page-title">Journal</h1>
-            <p class="journal-page-subtitle">Write a new entry, or tap a date to revisit it.</p>
+            <p class="section-tag">Journal</p>
+            <h1 class="journal-page-title display-mix">Write it <em>down</em>,<br>let it grow</h1>
+            <p class="journal-page-subtitle mono">Write a new entry, or tap a date to revisit one. Every entry becomes part of your reef.</p>
 
             <div class="journal-top-row">
                 <!-- Calendar widget: liquid-glass card, month grid, circle
@@ -158,47 +174,48 @@
         </div>
     </div>
 
-    <!-- About page -->
-    <div id="about-page" class="journal-page hidden">
-        <div class="journal-scroll about-scroll">
-            <button type="button" class="panel-close" data-close-panel="about-page" aria-label="Close">&times;</button>
-            <p class="about-eyebrow">About the project</p>
-            <h1 class="journal-page-title">Luma Reef</h1>
-            <p class="about-lede">A journal that grows into an underwater world. Each check-in becomes part of a living reef, shaped by how you felt when you wrote it.</p>
-
-            <div class="about-steps">
-                <div class="about-step">
-                    <span class="about-step-num">01</span>
-                    <h3>Write</h3>
-                    <p>Check in on the Journal page with a few lines about your day, and add photos if you like.</p>
+    <!-- About page: a scroll story told over a morphing cloud of plankton (about.js) -->
+    <div id="about-page" class="journal-page about-immersive hidden">
+        <canvas id="about-canvas" aria-hidden="true"></canvas>
+        <button type="button" class="panel-close" data-close-panel="about-page" aria-label="Close">&times;</button>
+        <div class="about-progress" aria-hidden="true"><i id="about-progress-bar"></i></div>
+        <div class="about-story">
+            <section class="about-chapter" data-shape="0">
+                <p class="section-tag">About Luma Reef</p>
+                <h1 class="display-mix">A journal that <em>grows</em><br>into an ocean</h1>
+                <p class="mono">An interactive diary where every check-in becomes part of a living underwater world, shaped by how you felt when you wrote it.</p>
+                <p class="about-scroll-hint mono">Scroll ↓</p>
+            </section>
+            <section class="about-chapter" data-shape="1">
+                <p class="section-tag">01 · Write</p>
+                <h2 class="display-mix">Every <em>entry</em><br>becomes a place</h2>
+                <p class="mono">Check in on the Journal page with a few lines about your day, and add photos if you like. Entries stay in your own browser.</p>
+            </section>
+            <section class="about-chapter" data-shape="2">
+                <p class="section-tag">02 · Read the mood</p>
+                <h2 class="display-mix">AI reads <em>how</em><br>it felt</h2>
+                <p class="mono">An AI model reads each entry and returns its overall tone, how strongly it's felt, and a few themes. That becomes the color and shape of what grows.</p>
+            </section>
+            <section class="about-chapter" data-shape="3">
+                <p class="section-tag">03 · Watch it grow</p>
+                <h2 class="display-mix">Your days <em>become</em><br>a reef</h2>
+                <p class="mono">Coral grows in colors that match each mood. When a day ends, its entries gather into a memory island with a short reflection. The sky above follows your real time and weather.</p>
+            </section>
+            <section class="about-chapter" data-shape="4">
+                <p class="section-tag">04 · The Aquarium</p>
+                <h2 class="display-mix">Dive in and<br><em>talk</em> to a fish</h2>
+                <p class="mono">Below the reef is an aquarium made from your entries: a coral for every day, fish on the bright ones, jellyfish on the quiet ones. A small fish companion can see your recent entries and listens. It's not a therapist, and it points you to real support if you need it.</p>
+            </section>
+            <section class="about-chapter" data-shape="5">
+                <p class="section-tag">05 · Why I made it</p>
+                <h2 class="display-mix">Built <em>with</em> care</h2>
+                <p class="mono">LUMA REEF started in a Data &amp; AI course as a question: what does emotional data look like when it becomes something you can see, inhabit, and come back to? It's still a work in progress.</p>
+                <div class="about-meta mono">
+                    <div><span>Built with</span>Three.js · JavaScript · Gemini API · OpenWeatherMap · Vercel</div>
+                    <div><span>Your data</span>Entries are saved only in this browser. Entry text is sent to the AI model for mood analysis.</div>
+                    <div><span>Made by</span><a href="https://mjipark.github.io/minji-portfolio/" target="_blank" rel="noopener">Minji Park</a></div>
                 </div>
-                <div class="about-step">
-                    <span class="about-step-num">02</span>
-                    <h3>Read the mood</h3>
-                    <p>An AI model reads each entry and returns its overall tone, how strongly it's felt, and a few themes.</p>
-                </div>
-                <div class="about-step">
-                    <span class="about-step-num">03</span>
-                    <h3>Watch it grow</h3>
-                    <p>Coral and fish appear in colors that match the mood. When a day ends, its entries gather into a memory island with a short reflection.</p>
-                </div>
-            </div>
-
-            <div class="about-card">
-                <h3>The Tank of Echoes</h3>
-                <p>Dive below the reef to find the tank, where a small fish companion is ready to talk. It can see your recent entries, so it can respond to what you actually wrote. It's a gentle listener, not a therapist, and it points you to real support if you need it.</p>
-            </div>
-
-            <div class="about-card">
-                <h3>Why I made it</h3>
-                <p>LUMA REEF started in a Data &amp; AI course as a question: what does emotional data look like when it becomes something you can see, inhabit, and come back to? It's still a work in progress, and I'm refining and expanding it.</p>
-            </div>
-
-            <div class="about-meta">
-                <div><span>Built with</span>Three.js · JavaScript · Gemini API · Vercel</div>
-                <div><span>Your data</span>Entries are saved only in this browser. Entry text is sent to the AI model for mood analysis.</div>
-                <div><span>Made by</span><a href="https://mjipark.github.io/minji-portfolio/" target="_blank" rel="noopener">Minji Park</a></div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -259,6 +276,9 @@
     <script src="islands.js"></script>
     <script src="guide.js"></script>
     <script src="chat.js"></script>
+    <script src="about.js"></script>
+    <script src="interactions.js"></script>
+    <div id="cursor" aria-hidden="true"><div class="cursor-ring"><span class="cursor-label"></span></div><div class="cursor-dot"></div></div>
 
 </body>
 </html>

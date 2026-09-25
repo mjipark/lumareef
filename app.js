@@ -620,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Side Nav Button Handling -- one shared floating pill nav used
     // everywhere, including on top of the Journal page overlay.
-    const navButtons = document.querySelectorAll('.side-nav .nav-links button');
+    const navButtons = document.querySelectorAll('.side-nav .nav-links button[data-nav]');
     navButtons.forEach(btn => {
         btn.addEventListener('click', (event) => {
             event.stopPropagation(); // Prevent triggering overlay/canvas clicks underneath
@@ -640,14 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     transitionToReef();
                     handleSubmersionAudio(false);
                 }
-                setNavTheme(activeScene === 'tank' ? 'dark' : 'light');
+                setNavTheme('light');
             } else if (section === 'sanctuary') {
                 // Tank = the Deep Ocean / fish tank view of past reflections
                 if (activeScene === 'reef') {
                     isSubmerged = true;
                     handleSubmersionAudio(true);
                 }
-                setNavTheme('dark');
+                setNavTheme('light');
             } else if (section === 'journal') {
                 if (typeof openJournalPanel === 'function') openJournalPanel();
                 // Journal is a light, paper-toned page now, so use the light nav.
@@ -655,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (section === 'about') {
                 const aboutPage = document.getElementById('about-page');
                 if (aboutPage) aboutPage.classList.remove('hidden');
+                // About is a dark, immersive page now
                 setNavTheme('light');
             }
 
