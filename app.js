@@ -79,7 +79,7 @@ function createVoxel(width, height, depth, x, y, z, topColor, sideColor, opacity
 
 // 4. Color Definition Assets
 const grass = 0x869B7E;       
-const sideNavy = 0x1d2d44;    
+const sideNavy = 0x4a7169;    // deep sage-teal soil (was navy, which clashed with the pastel start screen)    
 
 /* PASTEL TREE COLOR PALETTE */
 const leafGreen = 0xa3b19b;   
@@ -447,7 +447,12 @@ function animate() {
         // Let CSS handle the background gradient smoothly. We just tell the renderer.
         document.getElementById('canvas-container').style.background = isSubmerged ? 
             'linear-gradient(to bottom, #001524, #003566)' : 
-            'linear-gradient(to bottom, #a1c4fd, #c2e9fb)';
+            'linear-gradient(to bottom, #a9dadc, #a0d5d8)'; // same tone as the water, so no sky wedges show in the corners
+        const uiLayer = document.getElementById('ui-layer');
+        if (uiLayer) {
+            const onDark = isSubmerged || (typeof activeScene !== 'undefined' && activeScene === 'tank');
+            uiLayer.classList.toggle('on-dark', onDark);
+        }
 
         // If submerged, we fade out the clouds and scale up the water presence
         clouds.forEach(cloud => {
@@ -637,13 +642,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 setNavTheme('dark');
             } else if (section === 'journal') {
                 if (typeof openJournalPanel === 'function') openJournalPanel();
-                // Journal is a full-page dark gradient overlay, so nav icons
-                // go dark/white regardless of activeScene.
-                setNavTheme('dark');
+                // Journal is a light, paper-toned page now, so use the light nav.
+                setNavTheme('light');
             } else if (section === 'about') {
                 const aboutPage = document.getElementById('about-page');
                 if (aboutPage) aboutPage.classList.remove('hidden');
-                setNavTheme('dark');
+                setNavTheme('light');
             }
 
             // Let the guide mascot react to whichever section we just switched to

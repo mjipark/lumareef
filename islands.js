@@ -2,7 +2,7 @@
 //
 // Once a day "closes" (passes midnight in Korea time), every journal entry
 // written that day gets bundled into a single "Memory Island" -- a small
-// voxel landmass that appears scattered around the Surface Island. Claude
+// voxel landmass that appears scattered around the Surface Island. Gemini
 // reads that day's entries and returns a short title/summary/mood for it.
 // Days with fewer than 2 entries are skipped entirely (not enough to
 // meaningfully summarize), and today itself is never bundled since it
@@ -17,8 +17,8 @@
 // Depends on globals from app.js (THREE, scene, createVoxel) and from
 // journal.js (getJournalEntries). Must load after both.
 
-const ISLAND_STORAGE_KEY = 'lumareef_islands';
-const ISLAND_WEEKLY_KEY  = 'lumareef_weekly_islands';
+const ISLAND_STORAGE_KEY = 'lumareef_islands_v2';
+const ISLAND_WEEKLY_KEY  = 'lumareef_weekly_islands_v2';
 
 // ---- GENERATION MODE --------------------------------------------------------
 // ISLAND_DEV_MODE = true  → uses N-minute windows so you can demo without waiting for midnight.
@@ -26,7 +26,7 @@ const ISLAND_WEEKLY_KEY  = 'lumareef_weekly_islands';
 //
 // Set to 30 minutes for submission demo so islands appear quickly.
 const ISLAND_DEV_MODE = true;
-const ISLAND_DEV_WINDOW_MINUTES = 30; // each "day" = 30 minutes for demo
+const ISLAND_DEV_WINDOW_MINUTES = 1; // each "day" = 1 minute for demo
 
 // ---- KST day-bucketing helpers -------------------------------------------
 
@@ -126,7 +126,7 @@ function groupEntriesByClosedKstDay(entries) {
     return groups;
 }
 
-// ---- Claude summarization --------------------------------------------------
+// ---- Gemini summarization --------------------------------------------------
 
 const ISLAND_SYSTEM_PROMPT = `You read a batch of personal journal entries all written on the same day, for a reflective journaling app called LUMA REEF. Respond with ONLY a JSON object, no preamble, no markdown fences, in this exact shape:
 
@@ -143,13 +143,39 @@ function stripCodeFencesIsland(text) {
     return text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
 }
 
-const ISLAND_FALLBACK = { title: 'A Day Remembered', summary: 'A day of check-ins, gathered here.', mood: 'neutral', advice: 'Be gentle with yourself today.' };
+const gentleAdvices = [
+    'Be gentle with yourself today.',
+    'Take things one breath at a time.',
+    'It is okay to feel whatever you are feeling.',
+    'Tomorrow is a new day.',
+    'Give yourself a moment to just exist.',
+    'You are doing the best you can.',
+    'Let your mind rest for a little while.',
+    'Every small step counts.',
+    'Breathe in peace, breathe out worry.',
+    'You do not have to have everything figured out right now.',
+    'Allow yourself space to grow at your own pace.',
+    'Your feelings are valid and matter.',
+    'You carry more strength than you know.',
+    'There is no rush; take your time.',
+    'Embrace the quiet moments of today.'
+];
+const moodChoices = ['positive', 'neutral', 'negative', 'mixed'];
 
-async function summarizeDayWithClaude(dayEntries) {
+function getIslandFallback() {
+    return {
+        title: 'A Day Remembered',
+        summary: 'A day of check-ins, gathered here.',
+        mood: moodChoices[Math.floor(Math.random() * moodChoices.length)],
+        advice: gentleAdvices[Math.floor(Math.random() * gentleAdvices.length)]
+    };
+}
+
+async function summarizeDayWithGemini(dayEntries) {
     const entryText = dayEntries.map((e, i) => `Entry ${i + 1}: ${e.text}`).join('\n\n');
 
     try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(LUMA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -175,12 +201,12 @@ async function summarizeDayWithClaude(dayEntries) {
         // advice is allowed to be missing on older/odd model output -- fall
         // back to a generic gentle line rather than losing the whole island.
         if (!parsed.advice) {
-            parsed.advice = ISLAND_FALLBACK.advice;
+            parsed.advice = gentleAdvices[Math.floor(Math.random() * gentleAdvices.length)];
         }
         return parsed;
     } catch (err) {
         console.error('Island summarization failed:', err);
-        return ISLAND_FALLBACK;
+        return getIslandFallback();
     }
 }
 
@@ -257,113 +283,83 @@ function createIslandMesh(record) {
     const mood = record.mood || 'neutral';
     const type = isWeekly ? 'weekly' : (islandTypeByMood[mood] || 'sand');
     const px = record.position.x, py = record.position.y, pz = record.position.z;
-    const extras = []; // extra meshes added for this island (trees, spires, etc.)
+    const extras = []; 
 
-    // --- Base land platform ---
-    const baseW = isWeekly ? 1.8 : 1.0;
-    const baseH = isWeekly ? 0.5 : 0.4;
-    let baseColor, baseSideColor;
+    let baseColor, baseSideColor, leafColor, leafSideColor, trunkColor, trunkSideColor;
 
     if (type === 'iceberg') {
         baseColor = 0xd6f0f8; baseSideColor = 0x7ecce8;
+        leafColor = 0xeeeeee; leafSideColor = 0xcccccc;
+        trunkColor = 0x4a4a4a; trunkSideColor = 0x333333;
     } else if (type === 'volcanic') {
         baseColor = 0x5a3a2a; baseSideColor = 0x3d2518;
+        leafColor = 0xe66235; leafSideColor = 0xb3401c;
+        trunkColor = 0x5e3a24; trunkSideColor = 0x402515;
     } else if (type === 'forest') {
         baseColor = 0x4c8c5e; baseSideColor = 0x2e6640;
+        leafColor = 0xa3b19b; leafSideColor = 0x8f9e87;
+        trunkColor = 0xd7c4b7; trunkSideColor = 0xbeae9e;
     } else if (type === 'weekly') {
         baseColor = 0xf7c59f; baseSideColor = 0xc49060;
+        leafColor = 0xffb7c5; leafSideColor = 0xd98f9e;
+        trunkColor = 0x4a3b32; trunkSideColor = 0x332822;
     } else { // sand
         baseColor = 0xe8c97a; baseSideColor = 0xc4a04e;
+        leafColor = 0xd9b99b; leafSideColor = 0xb59b81;
+        trunkColor = 0x8b5a2b; trunkSideColor = 0x6e4722;
     }
 
+    // Main base voxel (anchor for clicking)
+    const baseW = isWeekly ? 1.8 : 1.2;
+    const baseH = isWeekly ? 0.5 : 0.4;
     const mesh = createVoxel(baseW, baseH, baseW, px, py, pz, baseColor, baseSideColor);
     mesh.userData = { type: 'memoryIsland', dateKey: record.dateKey };
 
-    // --- Type-specific details ---
+    // Procedurally generate attached land chunks
+    const rand = seededRandom(record.dateKey);
+    const numChunks = isWeekly ? 4 : Math.floor(rand() * 3) + 1;
+    const islandVoxels = [{x: px, y: py + baseH/2, z: pz, w: baseW}];
+    
+    for (let i = 0; i < numChunks; i++) {
+        const cw = (0.4 + rand() * 0.6) * (isWeekly ? 1.5 : 1);
+        const ch = 0.2 + rand() * 0.5;
+        const ox = px + (rand() - 0.5) * 1.5;
+        const oz = pz + (rand() - 0.5) * 1.5;
+        const cy = py - 0.2 + rand() * 0.4;
+        
+        const chunk = createVoxel(cw, ch, cw, ox, cy, oz, baseColor, baseSideColor);
+        chunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(chunk);
+        islandVoxels.push({x: ox, y: cy + ch/2, z: oz, w: cw});
+    }
 
-    if (type === 'forest') {
-        // 2-3 blocky voxel trees
-        const treeCount = isWeekly ? 5 : 2 + Math.floor(seededRandom(record.dateKey)() * 2);
-        const rng = seededRandom(record.dateKey + '_tree');
-        for (let t = 0; t < treeCount; t++) {
-            const tx = px + (rng() - 0.5) * (baseW - 0.25);
-            const tz = pz + (rng() - 0.5) * (baseW - 0.25);
-            const trunkH = 0.2 + rng() * 0.15;
-            // trunk
-            const trunk = createVoxel(0.1, trunkH, 0.1, tx, py + baseH / 2 + trunkH / 2, tz, 0x7a5230, 0x5a3a18);
-            trunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-            extras.push(trunk);
-            // canopy
-            const canopySize = 0.22 + rng() * 0.1;
-            const canopy = createVoxel(canopySize, canopySize, canopySize, tx, py + baseH / 2 + trunkH + canopySize / 2, tz, 0x3a8c50, 0x256638);
-            canopy.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-            extras.push(canopy);
+    // Procedurally spawn trees/features based on theme colors
+    const numTrees = isWeekly ? 3 : Math.floor(rand() * 2) + 1;
+    for (let i = 0; i < numTrees; i++) {
+        const v = islandVoxels[Math.floor(rand() * islandVoxels.length)];
+        const tx = v.x + (rand() - 0.5) * (v.w * 0.5);
+        const tz = v.z + (rand() - 0.5) * (v.w * 0.5);
+        
+        const th = 0.3 + rand() * 0.5;
+        const trunk = createVoxel(0.15, th, 0.15, tx, v.y + th/2, tz, trunkColor, trunkSideColor);
+        trunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(trunk);
+        
+        const lh = v.y + th;
+        const ls = 0.4 + rand() * 0.4;
+        const leaves = createVoxel(ls, ls, ls, tx, lh, tz, leafColor, leafSideColor);
+        leaves.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+        extras.push(leaves);
+        
+        // Occasional extra leaf clump
+        if (rand() > 0.5) {
+            const exx = tx + (rand() - 0.5) * ls;
+            const exz = tz + (rand() - 0.5) * ls;
+            const exy = lh + (rand() - 0.5) * (ls * 0.5);
+            const extraLeaves = createVoxel(ls*0.6, ls*0.6, ls*0.6, exx, exy, exz, leafColor, leafSideColor);
+            extraLeaves.userData = { type: 'memoryIsland', dateKey: record.dateKey };
+            extras.push(extraLeaves);
         }
-    }
-
-    if (type === 'sand') {
-        // Small dune bump on top + a tiny palm-like spike
-        const dune = createVoxel(0.35, 0.15, 0.35, px + 0.15, py + baseH / 2 + 0.07, pz + 0.1, 0xf2dfa0, 0xd4b86c);
-        dune.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(dune);
-        // Palm trunk
-        const palmTrunk = createVoxel(0.07, 0.32, 0.07, px - 0.1, py + baseH / 2 + 0.16, pz - 0.05, 0x9b7a3a, 0x7a5a22);
-        palmTrunk.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(palmTrunk);
-        // Palm fronds (two flat wide-short blocks)
-        const frond1 = createVoxel(0.3, 0.06, 0.1, px - 0.1 + 0.15, py + baseH / 2 + 0.32, pz - 0.05, 0x56a86e, 0x3a7a4e);
-        frond1.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(frond1);
-        const frond2 = createVoxel(0.1, 0.06, 0.3, px - 0.1, py + baseH / 2 + 0.32, pz - 0.05 + 0.15, 0x56a86e, 0x3a7a4e);
-        frond2.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(frond2);
-    }
-
-    if (type === 'iceberg') {
-        // Jagged ice spires rising from the base
-        const rng = seededRandom(record.dateKey + '_ice');
-        const spireCount = isWeekly ? 6 : 3;
-        for (let s = 0; s < spireCount; s++) {
-            const sx = px + (rng() - 0.5) * (baseW - 0.2);
-            const sz = pz + (rng() - 0.5) * (baseW - 0.2);
-            const spH = 0.3 + rng() * 0.45;
-            const spW = 0.1 + rng() * 0.1;
-            const spire = createVoxel(spW, spH, spW, sx, py + baseH / 2 + spH / 2, sz, 0xeaf8ff, 0xb0e4f8);
-            spire.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-            extras.push(spire);
-        }
-    }
-
-    if (type === 'volcanic') {
-        // Dark cone peak + orange lava crack accent blocks
-        const coneH = isWeekly ? 0.7 : 0.5;
-        const cone = createVoxel(0.4, coneH, 0.4, px, py + baseH / 2 + coneH / 2, pz, 0x4a2a1a, 0x2e180e);
-        cone.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(cone);
-        // Top crater glow
-        const lava = createVoxel(0.18, 0.1, 0.18, px, py + baseH / 2 + coneH + 0.05, pz, 0xff6a2a, 0xcc3a00);
-        lava.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(lava);
-    }
-
-    if (type === 'weekly') {
-        // Grand archipelago: 3 satellite mini-islands around a larger central one
-        const rng = seededRandom(record.dateKey + '_weekly');
-        for (let k = 0; k < 3; k++) {
-            const angle = (k / 3) * Math.PI * 2 + rng() * 0.5;
-            const dist = 1.2 + rng() * 0.4;
-            const smx = px + Math.cos(angle) * dist;
-            const smz = pz + Math.sin(angle) * dist;
-            const smColor = [0xe8c97a, 0x4c8c5e, 0xd6f0f8][k];
-            const smSide  = [0xc4a04e, 0x2e6640, 0x7ecce8][k];
-            const sat = createVoxel(0.55, 0.3, 0.55, smx, py, smz, smColor, smSide);
-            sat.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-            extras.push(sat);
-        }
-        // Central peak
-        const peak = createVoxel(0.5, 0.55, 0.5, px, py + 0.5, pz, 0xd4a870, 0xa07840);
-        peak.userData = { type: 'memoryIsland', dateKey: record.dateKey };
-        extras.push(peak);
     }
 
     islandRegistry.push({ dateKey: record.dateKey, mesh, extras, record });
@@ -377,7 +373,7 @@ function loadSavedIslandsIntoScene() {
 
 // ---- Main generation pass --------------------------------------------------
 // Call on app load. Finds closed KST days with 2+ entries that don't already
-// have a saved island, summarizes each via Claude, persists, and renders.
+// have a saved island, summarizes each via Gemini, persists, and renders.
 async function generateMissingIslands() {
     if (typeof getJournalEntries !== 'function') return;
 
@@ -392,7 +388,7 @@ async function generateMissingIslands() {
 
     for (const dateKey of pendingDateKeys) {
         const dayEntries = groups[dateKey];
-        const summary = await summarizeDayWithClaude(dayEntries);
+        const summary = await summarizeDayWithGemini(dayEntries);
         const position = pickScatteredPosition(dateKey, existingPositions);
         existingPositions.push(position); // so the next island in this same pass avoids it too
 
@@ -479,7 +475,7 @@ async function generateWeeklyMergeIfNeeded() {
         const weekText = records.map((r, i) => `Day ${i+1} (${r.title}): ${r.summary}`).join('\n\n');
         let summary = { title: 'A Week Remembered', summary: 'A week of reflections.', mood: 'neutral', advice: 'Keep going.' };
         try {
-            const response = await fetch('/api/chat', {
+            const response = await fetch(LUMA_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

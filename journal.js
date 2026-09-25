@@ -29,8 +29,39 @@ function saveJournalEntry(text, images = [], analysis = null) {
         analysis: analysis
     };
     entries.push(entry);
-    localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    try {
+        localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    } catch (err) {
+        // Browser storage is ~5MB; photos stored as data URLs fill it fast.
+        // Keep the words even if the photos don't fit.
+        if (images.length) {
+            console.warn('Storage full -- saving entry without photos:', err);
+            entry.images = [];
+            entry.photosDropped = true;
+            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+        } else {
+            throw err;
+        }
+    }
     return entry;
+}
+
+// Shrinks a photo before storing it so a few pictures don't use up the
+// browser's small storage quota. Returns a JPEG data URL (max 1024px side).
+function compressImageDataUrl(dataUrl, maxSide = 1024, quality = 0.75) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+    });
 }
 
 // Patches an existing entry's analysis field after the fact (since sentiment
@@ -40,7 +71,11 @@ function updateJournalEntryAnalysis(entryId, analysis) {
     const target = entries.find(e => e.id === entryId);
     if (!target) return;
     target.analysis = analysis;
-    localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    try {
+        localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    } catch (err) {
+        console.warn('Could not store entry analysis:', err);
+    }
 }
 
 // Format an ISO timestamp into something readable, e.g. "Jun 26, 2026 - 3:42 PM"
@@ -225,6 +260,9 @@ function openJournalPanel() {
 async function submitJournalEntry(text, images = [], onStatusUpdate) {
     const entry = saveJournalEntry(text, images);
     console.log('Saved journal entry:', entry);
+    if (entry.photosDropped && onStatusUpdate) {
+        onStatusUpdate('Saved (photos were too large to keep)');
+    }
 
     if (onStatusUpdate) onStatusUpdate('Reading your entry...');
 
@@ -250,7 +288,7 @@ async function submitJournalEntry(text, images = [], onStatusUpdate) {
             mixed:    '🌊 Shifting Currents today',
             neutral:  '🐚 Steady Reef today'
         };
-        const vibeLabel = moodVibes[analysis && analysis.mood] || '✓ Checked in';
+        const vibeLabel = moodVibes[analysis && (analysis.mood || analysis.sentiment)] || '✓ Checked in';
         if (onStatusUpdate) onStatusUpdate(vibeLabel);
     } else if (onStatusUpdate) {
         onStatusUpdate('✓ Checked in just now');
@@ -269,16 +307,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusText = document.getElementById('status-text');
 
     function openModal() {
+        if (!modal || !textarea) return;
         modal.classList.remove('hidden');
         textarea.value = '';
         textarea.focus();
     }
 
     function closeModal() {
-        modal.classList.add('hidden');
+        if (modal) modal.classList.add('hidden');
     }
 
-    checkinBtn.addEventListener('click', (event) => {
+    if (checkinBtn) checkinBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         // 'Write Today' goes straight to the Journal page — the real writing space
         const journalPage = document.getElementById('journal-page');
@@ -292,14 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    cancelBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
     // Click on the dark backdrop (but not the box itself) also closes it
-    modal.addEventListener('click', (event) => {
+    if (modal) modal.addEventListener('click', (event) => {
         if (event.target === modal) closeModal();
     });
 
-    submitBtn.addEventListener('click', async () => {
+    if (submitBtn) submitBtn.addEventListener('click', async () => {
         const text = textarea.value.trim();
         if (!text) {
             textarea.focus();
@@ -315,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Quick keyboard shortcut: Cmd/Ctrl+Enter submits
-    textarea.addEventListener('keydown', (event) => {
+    if (textarea) textarea.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
             submitBtn.click();
         }
@@ -372,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const files = Array.from(notebookImgInput.files || []);
             const readers = files.map(file => new Promise(resolve => {
                 const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
+                reader.onload = e => compressImageDataUrl(e.target.result).then(resolve);
                 reader.readAsDataURL(file);
             }));
             Promise.all(readers).then(dataUrls => {

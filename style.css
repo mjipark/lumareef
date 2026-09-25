@@ -6,7 +6,7 @@
 }
 
 body {
-    background-color: #00b4d8;
+    background-color: #d9eeec;
     margin: 0;
     padding: 0;
     width: 100vw;
@@ -1838,4 +1838,157 @@ body {
     background: rgba(244, 252, 255, 0.85);
     transform: scale(1.08);
     z-index: 105;
+}
+
+
+/* ==========================================================================
+   Visual refresh (Sep 2026): one palette across the app, taken from the
+   start screen -- soft teal background, deep teal text, sage accents,
+   white "sea glass" cards. Everything below overrides earlier rules.
+   ========================================================================== */
+:root {
+    --lr-bg-top: #e4f3f1;
+    --lr-bg-bottom: #bfdfdb;
+    --lr-ink: #24423f;
+    --lr-ink-soft: #587471;
+    --lr-teal: #1f8a80;
+    --lr-teal-soft: #8fcfc8;
+    --lr-card: rgba(255, 255, 255, 0.62);
+    --lr-card-border: rgba(255, 255, 255, 0.9);
+    --lr-shadow: 0 10px 34px rgba(36, 66, 63, 0.12);
+    --lr-paper: #fbfaf5;
+    --lr-rule: rgba(31, 138, 128, 0.14);
+}
+
+/* Reef title: dark text above water, white once submerged / in the tank */
+#ui-layer { color: var(--lr-ink); text-shadow: none; }
+#ui-layer #status-text {
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(255, 255, 255, 0.85);
+    color: var(--lr-ink);
+}
+#ui-layer.on-dark { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+#ui-layer.on-dark #status-text {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+/* ---- Journal + About pages ---- */
+.journal-page {
+    background: linear-gradient(180deg, var(--lr-bg-top) 0%, #d3ebe8 55%, var(--lr-bg-bottom) 100%);
+    color: var(--lr-ink);
+}
+.journal-page-title {
+    font-size: 30px;
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--lr-ink);
+}
+.journal-page-subtitle {
+    color: var(--lr-ink-soft);
+    opacity: 1;
+    letter-spacing: 0.02em;
+}
+.journal-page .panel-close { color: var(--lr-ink); }
+
+/* Calendar: a proper card instead of floating numbers */
+.journal-top-row { align-items: stretch; gap: 24px; min-height: 0; }
+.journal-top-row .journal-calendar {
+    flex: 0 0 320px;
+    background: var(--lr-card);
+    border: 1px solid var(--lr-card-border);
+    border-radius: 20px;
+    padding: 20px 20px 18px;
+    box-shadow: var(--lr-shadow);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    align-self: flex-start;
+}
+.journal-calendar-title { color: var(--lr-ink); }
+.journal-calendar-weekdays { color: var(--lr-ink-soft); opacity: 1; }
+.cal-nav-btn {
+    background: #ffffff;
+    border: 1px solid rgba(36, 66, 63, 0.12);
+    color: var(--lr-ink);
+}
+.cal-nav-btn:hover { background: #eef7f6; }
+.cal-day { color: var(--lr-ink); }
+.cal-day:hover { background: rgba(31, 138, 128, 0.08); }
+.cal-day.is-today { color: var(--lr-teal); font-weight: 700; }
+.cal-day.has-entry { background: rgba(143, 207, 200, 0.35); }
+.cal-day.has-entry::after { border-color: var(--lr-teal); }
+.cal-day.is-selected { background: var(--lr-ink); color: #ffffff; }
+.cal-day.is-selected.has-entry::after { border-color: rgba(255, 255, 255, 0.6); }
+.cal-clear-btn {
+    background: #ffffff;
+    border: 1px solid rgba(36, 66, 63, 0.14);
+    color: var(--lr-ink);
+}
+.cal-clear-btn:hover { background: #eef7f6; }
+
+/* Notebook: clean ruled paper instead of the dark photo texture */
+.journal-notebook {
+    background-image: none;
+    background-color: var(--lr-paper);
+    border-radius: 20px;
+    border: 1px solid rgba(36, 66, 63, 0.08);
+    box-shadow: var(--lr-shadow);
+}
+.notebook-overlay { display: none; }
+.notebook-content { padding: 26px 30px 20px; }
+.notebook-date-header {
+    font-family: 'Georgia', serif;
+    color: var(--lr-teal);
+    border-bottom: 1px solid var(--lr-rule);
+    font-size: 14px;
+}
+.journal-page-textarea {
+    color: var(--lr-ink);
+    caret-color: var(--lr-teal);
+    font-size: 16px;
+    line-height: 32px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--lr-rule) 31px, var(--lr-rule) 32px) !important;
+    background-attachment: local;
+    min-height: 288px;
+}
+.journal-page-textarea::placeholder { color: rgba(36, 66, 63, 0.35); }
+.notebook-attach-btn {
+    color: var(--lr-ink) !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(36, 66, 63, 0.16) !important;
+}
+.notebook-save-btn {
+    background: var(--lr-ink) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(36, 66, 63, 0.25) !important;
+}
+.notebook-save-btn:hover { background: #1a3431 !important; }
+.notebook-save-btn:disabled { opacity: 0.6; cursor: wait; }
+.journal-write-status { color: var(--lr-teal) !important; }
+.notebook-attachment-thumb { border-color: rgba(36, 66, 63, 0.15); }
+
+/* Past entries */
+.journal-page .journal-entry {
+    background: var(--lr-card);
+    border: 1px solid var(--lr-card-border);
+    box-shadow: var(--lr-shadow);
+    color: var(--lr-ink);
+}
+.journal-page .journal-entry:hover { background: rgba(255, 255, 255, 0.8); }
+.journal-page .journal-entry-date { color: var(--lr-teal); opacity: 1; }
+.journal-page .journal-empty {
+    color: var(--lr-ink-soft);
+    opacity: 1;
+    text-align: center;
+    padding: 28px 0;
+}
+.journal-entry-img { border-color: rgba(36, 66, 63, 0.12); }
+
+@media (max-width: 760px) {
+    .journal-top-row .journal-calendar { flex: 1 1 auto; align-self: stretch; padding: 16px; }
+    .journal-page-title { font-size: 24px; }
+    .notebook-content { padding: 20px 18px 16px; }
 }

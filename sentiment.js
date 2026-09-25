@@ -1,11 +1,11 @@
 // sentiment.js - Sentiment & Theme Analysis for Journal Entries
-// Calls Claude (via our local proxy at /api/chat -- see server.js) to turn
+// Calls Gemini (via our local proxy at /api/chat -- see server.js) to turn
 // raw journal text into structured data: { sentiment, intensity, themes }
 // This is what makes agent.js's fish/coral spawning actually mean something,
 // instead of being random.
 //
-// Talks to our own local proxy, NOT directly to api.anthropic.com or a local
-// Ollama server -- the proxy is what keeps the real API key server-side.
+// Talks to our own local proxy, NOT directly to external Gemini APIs --
+// the proxy is what keeps the real API key server-side.
 
 const SENTIMENT_SYSTEM_PROMPT = `You analyze short personal journal entries for a reflective journaling app.
 Given the user's entry, respond with ONLY a JSON object, no preamble, no markdown fences, in this exact shape:
@@ -23,7 +23,7 @@ Rules:
 // network or a malformed model response never blocks saving the entry itself.
 const FALLBACK_ANALYSIS = { sentiment: 'neutral', intensity: 0.3, themes: [] };
 
-// Claude sometimes wraps JSON in markdown fences even when told not to --
+// Gemini sometimes wraps JSON in markdown fences even when told not to --
 // strip those before parsing rather than trusting the output is always raw JSON.
 function stripCodeFences(text) {
     return text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
@@ -36,7 +36,7 @@ function stripCodeFences(text) {
  */
 async function analyzeJournalEntry(text) {
     try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(LUMA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -115,7 +115,7 @@ async function sendChatMessage(userText) {
     appendChatMessage('user', userText);
     chatHistory.push({ role: 'user', content: userText });
 
-    // 2. Spawn a rising bubble in the Tank of Echoes for this message
+    // 2. Spawn a rising bubble for the user's question in the Tank of Echoes
     if (typeof spawnChatBubble === 'function' && typeof activeScene !== 'undefined' && activeScene === 'tank') {
         spawnChatBubble(userText);
     }
@@ -123,14 +123,13 @@ async function sendChatMessage(userText) {
     // 3. Local crisis check runs regardless of the model's response
     const isCrisis = detectCrisisLanguage(userText);
 
-
-    // 3. Show a "thinking" placeholder bubble with a spinning indicator
+    // 4. Show a "thinking" placeholder bubble
     const thinkingBubble = appendThinkingBubble();
 
     try {
-        // 4. Call our local proxy (server.js), which calls Claude server-side
+        // 5. Call our Vercel serverless function (/api/chat)
         const journalContext = buildJournalContext();
-        const response = await fetch('/api/chat', {
+        const response = await fetch(LUMA_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -140,34 +139,52 @@ async function sendChatMessage(userText) {
             })
         });
 
+        const responseText = await response.text();
+        console.log('[chat] API raw response status:', response.status, responseText.slice(0, 300));
+
         if (!response.ok) {
-            throw new Error(`Proxy responded with ${response.status}`);
+            throw new Error(`API ${response.status}: ${responseText.slice(0, 200)}`);
         }
 
-        const data = await response.json();
+        const data = JSON.parse(responseText);
 
-        // 5. Extract text blocks from the Anthropic response shape
-        const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
-        const replyText = textBlocks.join('\n').trim() || "Sorry, I'm having trouble finding the words right now.";
+        // 6. Extract text — handles both Anthropic {content:[{type:'text',text:'...'}]} shape
+        //    and any plain {reply:'...'} shape we might get
+        let replyText = '';
+        if (data.content && Array.isArray(data.content)) {
+            replyText = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+        } else if (data.reply) {
+            replyText = data.reply;
+        } else if (typeof data === 'string') {
+            replyText = data;
+        }
+        replyText = replyText || "I hear you, sweet friend. Let me think for a moment...";
 
-        // 6. Update the thinking bubble with the real reply
+        // 7. Update the thinking bubble with the real reply
         resolveThinkingBubble(thinkingBubble, replyText);
 
-        // 7. Save assistant reply to history
+        // 8. Save assistant reply to history
         chatHistory.push({ role: 'assistant', content: replyText });
+
+        // 9. Also spawn a bubble for the AI reply (summarized) in the Tank
+        if (typeof spawnChatBubble === 'function' && typeof activeScene !== 'undefined' && activeScene === 'tank') {
+            spawnChatBubble(replyText);
+        }
+
     } catch (err) {
-        console.error('Chat API error:', err);
-        resolveThinkingBubble(thinkingBubble, "I'm having trouble hearing you through the water right now. Could you try again in a moment?");
-        // Don't keep a broken turn in history -- remove the user message we
-        // pushed in step 1 so a retry doesn't send a duplicated/confused thread.
-        chatHistory.pop();
+        console.error('[chat] API error:', err);
+        resolveThinkingBubble(thinkingBubble, "I'm having a little trouble with the current right now — try again in a moment? 🐠");
+        chatHistory.pop(); // remove failed user turn
     }
 
-    // 8. Crisis resources shown independent of whether the API call succeeded
+    // 10. Crisis resources shown independent of API result
     if (isCrisis) {
         appendCrisisResources();
     }
 }
+
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const talkBtn = document.getElementById('talk-to-fish-btn');

@@ -1,4 +1,19 @@
+// Sites allowed to call this function from the browser. The GitHub Pages copy
+// of the app lives on a different origin than this Vercel deployment.
+const ALLOWED_ORIGINS = ['https://mjipark.github.io'];
+
 module.exports = async (req, res) => {
+    const origin = req.headers.origin;
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+
     // Only allow POST requests for the chat API
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed. Use POST.' });

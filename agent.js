@@ -5,7 +5,8 @@ const lifeforms = [];
 // Shared texture loader + cache so each f1-f6 image is only loaded once
 const fishTextureLoader = new THREE.TextureLoader();
 const fishTextureCache = {};
-const fishImageNames = ['f1.png', 'f2.png', 'f3.png', 'f4.png', 'f5.png', 'f6.png'];
+// Only f2.png is in assets/ now (f1, f3-f6 were removed), so only list files that exist.
+const fishImageNames = ['f2.png'];
 
 function getFishTexture(imageName) {
     if (!fishTextureCache[imageName]) {

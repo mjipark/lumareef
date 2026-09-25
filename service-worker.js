@@ -1,7 +1,7 @@
 // LumaReef Service Worker
 // Caches all static assets for offline use so the app works without internet.
 
-const CACHE_NAME = 'lumareef-v1';
+const CACHE_NAME = 'lumareef-v2';
 
 // All files to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -21,12 +21,7 @@ const PRECACHE_ASSETS = [
   './assets/icon-512.png',
   './assets/note.png',
   './assets/Island.png',
-  './assets/f1.png',
   './assets/f2.png',
-  './assets/f3.png',
-  './assets/f4.png',
-  './assets/f5.png',
-  './assets/f6.png',
   './assets/ttt_1.png',
   './assets/ttt_2.png',
   './assets/ttt_3.png',
@@ -65,6 +60,27 @@ self.addEventListener('fetch', event => {
   // Skip non-GET requests and chrome-extension URLs
   if (event.request.method !== 'GET') return;
   if (event.request.url.startsWith('chrome-extension://')) return;
+
+  // Never cache API calls.
+  if (event.request.url.includes('/api/')) return;
+
+  // Network-first for the app's own files, so updates show up right away
+  // (cache-first kept serving old, broken versions to returning visitors).
+  // The cache is only used when offline.
+  if (new URL(event.request.url).origin === self.location.origin) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(cached =>
+        cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : undefined)
+      ))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(cached => {

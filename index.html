@@ -219,9 +219,15 @@
     <audio id="dive-sound" src="sounds/dive.mp3" preload="auto"></audio>
     <audio id="underwater-ambience" src="sounds/underwater.mp3" loop preload="auto"></audio>
 
+    <script>
+        // The AI features call a Vercel serverless function (api/chat.js).
+        // GitHub Pages can only serve static files, so when the app is opened
+        // from github.io, send API calls to the Vercel deployment instead.
+        const LUMA_API_ORIGIN = 'https://lumareef.vercel.app';
+        const LUMA_API_URL = (location.hostname.endsWith('github.io') ? LUMA_API_ORIGIN : '') + '/api/chat';
+    </script>
     <script src="app.js"></script>
     <script src="agent.js"></script>
-    <script src="videoAgent.js"></script>
     <script src="tank.js"></script>
     <script src="sentiment.js"></script>
     <script src="journal.js"></script>
