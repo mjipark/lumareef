@@ -2189,7 +2189,7 @@ body, #ui-layer, .journal-page, .guide-bar, .side-panel, .island-widget,
     #month-title { font-size: 28px; }
     /* On phones the guide card sits under the page title, so it never
        covers the bottom nav or the Talk to a fish button. */
-    .guide-bar { top: 215px; bottom: auto; width: calc(100vw - 32px); transform: translate(-50%, -12px); }
+    .guide-bar { top: 252px; bottom: auto; width: calc(100vw - 32px); transform: translate(-50%, -12px); }
     .guide-bar.visible { transform: translate(-50%, 0); }
     .talk-to-fish-btn { bottom: 110px; right: 16px; }
     #about-page .panel-close { top: 16px; right: 16px; }

@@ -397,6 +397,7 @@
             if (p[i * 3 + 1] > 3.6) p[i * 3 + 1] = -1.1;
         }
         moteGeo.attributes.position.needsUpdate = true;
+        moteMat.size = (4 + state.nightFactor * 3) * Math.min(window.devicePixelRatio || 1, 2);
         moteMat.opacity = 0.07 + state.nightFactor * 0.7 + Math.sin(t * 0.8) * 0.04;
 
         if (weatherPoints) {
