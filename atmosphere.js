@@ -10,6 +10,9 @@
 // pointer, scroll / swipe down to dive to the tank, a giant word in the sky
 // naming the time of day, and stars at night.
 //
+// Weather: Open-Meteo (temperature, clouds, sunrise/sunset) plus RainViewer
+// radar for rain that's actually falling. Both are free and need no key.
+//
 // Demo overrides (handy for presenting): add ?sky=night (or dawn, day,
 // golden, dusk) and/or ?weather=rain (or snow, clear) to the URL.
 //
@@ -19,11 +22,11 @@
 (function () {
     // ---- 1. Looks for each time of day ------------------------------------
     const LOOKS = {
-        night: {
-            skyTop: '#050d1a', skyBottom: '#123a4a', fog: '#123a4a',
-            water1: '#1d4a55', water2: '#245a64',
-            ambient: '#6f8fb8', ambientI: 0.45, sun: '#9fb8e0', sunI: 0.25,
-            cloud: '#5f7f90', glow: 1.0, stars: 1.0, ink: 'light'
+        night: { // pastel night: periwinkle and lilac rather than black
+            skyTop: '#5d6aa8', skyBottom: '#a9b4e0', fog: '#9aa7d8',
+            water1: '#6f86c2', water2: '#8195cc',
+            ambient: '#c9cff5', ambientI: 0.6, sun: '#dfe4ff', sunI: 0.3,
+            cloud: '#c3c9ee', glow: 1.0, stars: 1.0, ink: 'light'
         },
         dawn: {
             skyTop: '#7d8fb8', skyBottom: '#f3c2a6', fog: '#e9c3b0',
@@ -43,11 +46,11 @@
             ambient: '#ffe6c2', ambientI: 0.7, sun: '#ffc27a', sunI: 0.65,
             cloud: '#fff1dc', glow: 0.2, stars: 0.0, ink: 'dark'
         },
-        dusk: {
-            skyTop: '#2a3560', skyBottom: '#d98b7e', fog: '#8a6a7c',
-            water1: '#3d5f70', water2: '#4d6f7c',
-            ambient: '#c7a6c9', ambientI: 0.5, sun: '#ff9f80', sunI: 0.4,
-            cloud: '#d6a8b4', glow: 0.7, stars: 0.4, ink: 'light'
+        dusk: { // lilac to peach
+            skyTop: '#8d86c9', skyBottom: '#f4b9a8', fog: '#d9aebb',
+            water1: '#8a9fc6', water2: '#9eadcf',
+            ambient: '#f0d2e2', ambientI: 0.6, sun: '#ffb7a0', sunI: 0.45,
+            cloud: '#f6d3dc', glow: 0.7, stars: 0.4, ink: 'light'
         }
     };
     const PHASE_LABEL = { night: 'Night', dawn: 'Dawn', day: 'Day', golden: 'Golden hour', dusk: 'Dusk' };
@@ -147,22 +150,69 @@
         return TZ_PLACES[tz] || TZ_PLACES['Asia/Seoul'];
     }
 
+    // Live rain from weather radar (RainViewer: free, no key). Forecast models
+    // can say "0 mm" while it's pouring; radar sees rain that's actually falling.
+    // We read the colour of the latest radar tile at the visitor's location.
+    async function radarRainAt(lat, lon) {
+        const maps = await fetch('https://api.rainviewer.com/public/weather-maps.json').then(r => r.json());
+        const frames = maps.radar && maps.radar.past;
+        if (!frames || !frames.length) return null;
+        const frame = frames[frames.length - 1];
+        const z = 7, n = 2 ** z;
+        const xt = (lon + 180) / 360 * n;
+        const yr = lat * Math.PI / 180;
+        const yt = (1 - Math.log(Math.tan(yr) + 1 / Math.cos(yr)) / Math.PI) / 2 * n;
+        const tx = Math.floor(xt), ty = Math.floor(yt);
+        const px = Math.floor((xt - tx) * 256), py = Math.floor((yt - ty) * 256);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = `${maps.host}${frame.path}/256/${z}/${tx}/${ty}/2/0_0.png`; });
+        const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+        const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+        const d = g.getImageData(Math.max(px - 3, 0), Math.max(py - 3, 0), 7, 7).data;
+        let wet = 0, warm = 0;
+        for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] > 0) { wet++; if (d[i] > 200) warm++; } // yellow/red = heavier rain
+        }
+        const total = d.length / 4;
+        if (wet / total < 0.3) return { raining: false };
+        return { raining: true, heavy: warm / total > 0.4 };
+    }
+
+    async function fetchOpenMeteo(lat, lon) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+            `&current=temperature_2m,cloud_cover,weather_code,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Open-Meteo ' + res.status);
+        const data = await res.json();
+        const off = data.utc_offset_seconds || 0;
+        state.sunrise = localIsoToEpoch(data.daily.sunrise[0], off);
+        state.sunset = localIsoToEpoch(data.daily.sunset[0], off);
+        state.temp = data.current ? Math.round(data.current.temperature_2m) : null;
+        state.cloudCover = data.current ? data.current.cloud_cover / 100 : 0;
+        let [kind, text] = describeWeather(data.current && data.current.weather_code);
+        if (data.current && data.current.precipitation > 0 && kind === 'clear') { kind = 'rain'; text = 'Rain'; }
+        state.weather = kind; state.weatherText = text;
+        state.source = 'Open-Meteo';
+    }
+
     async function fetchSky() {
         try {
             const [lat, lon, name] = await getCoords();
             state.place = name;
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-                `&current=temperature_2m,cloud_cover,weather_code&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Open-Meteo ' + res.status);
-            const data = await res.json();
-            const off = data.utc_offset_seconds || 0;
-            state.sunrise = localIsoToEpoch(data.daily.sunrise[0], off);
-            state.sunset = localIsoToEpoch(data.daily.sunset[0], off);
-            state.temp = data.current ? Math.round(data.current.temperature_2m) : null;
-            state.cloudCover = data.current ? data.current.cloud_cover / 100 : 0;
-            const [kind, text] = describeWeather(data.current && data.current.weather_code);
-            state.weather = kind; state.weatherText = text;
+            await fetchOpenMeteo(lat, lon);
+            try {
+                const radar = await radarRainAt(lat, lon);
+                if (radar && radar.raining) {
+                    const cold = state.temp != null && state.temp <= 1;
+                    state.weather = cold ? 'snow' : 'rain';
+                    state.weatherText = cold ? 'Snow' : (radar.heavy ? 'Heavy rain' : 'Rain');
+                    state.cloudCover = Math.max(state.cloudCover, 0.9);
+                    state.source = 'radar';
+                }
+            } catch (radarErr) {
+                console.info('[atmosphere] Radar unavailable, using the forecast only:', radarErr);
+            }
         } catch (err) {
             console.warn('[atmosphere] Live sky unavailable, using the local clock:', err);
         }
@@ -214,8 +264,25 @@
     let weatherPoints = null;
     function buildWeatherParticles() {
         if (weatherPoints) { scene.remove(weatherPoints); weatherPoints = null; }
-        if (state.weather !== 'rain' && state.weather !== 'snow') return;
-        const n = state.weather === 'rain' ? 500 : 300;
+        if (state.weather === 'rain') {
+            // Rain as thin slanted streaks (line segments), not dots
+            const n = 700;
+            const pos = new Float32Array(n * 6);
+            for (let i = 0; i < n; i++) {
+                const x = (Math.random() - 0.5) * 18, y = Math.random() * 10 - 1.5, z = (Math.random() - 0.5) * 18;
+                pos.set([x, y, z, x + 0.03, y + 0.32, z + 0.03], i * 6);
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            weatherPoints = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+                color: 0xe6f3f7, transparent: true, opacity: 0.55, depthWrite: false
+            }));
+            weatherPoints.userData.kind = 'rain';
+            scene.add(weatherPoints);
+            return;
+        }
+        if (state.weather !== 'snow') return;
+        const n = 300;
         const geo = new THREE.BufferGeometry();
         const pos = new Float32Array(n * 3);
         for (let i = 0; i < n; i++) {
@@ -226,11 +293,9 @@
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         weatherPoints = new THREE.Points(geo, new THREE.PointsMaterial({
             map: GLOW_TEX, transparent: true, depthWrite: false, sizeAttenuation: false,
-            size: (state.weather === 'rain' ? 3 : 6) * Math.min(window.devicePixelRatio || 1, 2),
-            color: state.weather === 'rain' ? 0xcfe8f0 : 0xffffff,
-            opacity: state.weather === 'rain' ? 0.55 : 0.8
+            size: 6 * Math.min(window.devicePixelRatio || 1, 2), color: 0xffffff, opacity: 0.8
         }));
-        weatherPoints.userData.kind = state.weather;
+        weatherPoints.userData.kind = 'snow';
         scene.add(weatherPoints);
     }
 
@@ -284,7 +349,7 @@
         const { look, phase } = lookFor(Date.now());
         // Heavy cloud cover or fog pulls the fog in closer and greys the sky a little
         const overcast = Math.max(state.cloudCover - 0.4, 0) / 0.6 + (state.weather === 'fog' ? 0.8 : 0) + (state.weather === 'rain' ? 0.4 : 0);
-        const grey = Math.min(overcast, 1) * 0.35;
+        const grey = Math.min(overcast, 1) * (state.weather === 'rain' ? 0.5 : 0.35);
         const greyed = hex => '#' + c(hex).lerp(c('#9aa9ad'), grey).getHexString();
         state.look = Object.assign({}, look, {
             skyTop: greyed(look.skyTop), skyBottom: greyed(look.skyBottom), fog: greyed(look.fog)
@@ -307,7 +372,7 @@
         [0, 1, 4, 5].forEach(i => waterMaterials[i].color.set(c(L.water1).multiplyScalar(0.8)));
         waterMaterials[3].color.set(c(L.water1).multiplyScalar(0.6));
         clouds.forEach(g => g.children.forEach(m => {
-            m.material.color.set(L.cloud);
+            m.material.color.set(state.weather === 'rain' ? greyed(L.cloud) : L.cloud);
             m.material.transparent = true;
             m.material.opacity = (L.glow > 0.8 ? 0.55 : 0.92) - Math.min(overcast, 1) * 0.15;
         }));
@@ -317,7 +382,9 @@
         document.documentElement.style.setProperty('--sky-top', L.skyTop);
         document.documentElement.style.setProperty('--sky-bottom', L.skyBottom);
         document.getElementById('sky-stars').style.opacity = L.stars * (1 - Math.min(state.cloudCover, 1) * 0.7);
-        document.getElementById('sky-word').textContent = PHASE_LABEL[phase] === 'Golden hour' ? 'Golden' : PHASE_LABEL[phase];
+        // The giant word names the weather when it's raining or snowing, otherwise the time of day
+        const wordFor = { rain: 'Rain', snow: 'Snow', fog: 'Mist' }[state.weather];
+        document.getElementById('sky-word').textContent = wordFor || (PHASE_LABEL[phase] === 'Golden hour' ? 'Golden' : PHASE_LABEL[phase]);
 
         // Sun or moon: a soft glow that travels across the sky through the day
         const orb = document.getElementById('sky-orb');
@@ -325,6 +392,9 @@
         const dayT = Math.min(Math.max((Date.now() - sr) / (ss - sr), 0), 1);
         const isNight = phase === 'night' || (forcedPhase === 'night');
         orb.classList.toggle('moon', isNight);
+        // Hide the sun/moon behind heavy cloud or rain
+        orb.style.opacity = String(1 - Math.min(overcast, 1) * 0.9);
+        if (state.weather === 'rain') ambientLight.intensity *= 0.85;
         const t = forcedPhase ? { dawn: 0.05, day: 0.5, golden: 0.9, dusk: 0.98, night: 0.3 }[forcedPhase] : (isNight ? 0.3 : dayT);
         orb.style.left = (12 + t * 76) + 'vw';
         orb.style.top = (30 - Math.sin(t * Math.PI) * 22) + 'vh';
@@ -402,11 +472,22 @@
 
         if (weatherPoints) {
             const wp = weatherPoints.geometry.attributes.position.array;
-            const rain = weatherPoints.userData.kind === 'rain';
-            for (let i = 0; i < wp.length; i += 3) {
-                wp[i + 1] -= rain ? 0.12 : 0.012;
-                if (!rain) wp[i] += Math.sin(t + i) * 0.003;
-                if (wp[i + 1] < -1.2) wp[i + 1] = 8;
+            if (weatherPoints.userData.kind === 'rain') {
+                for (let i = 0; i < wp.length; i += 6) {
+                    wp[i] -= 0.012; wp[i + 3] -= 0.012;          // slight wind slant
+                    wp[i + 1] -= 0.16; wp[i + 4] -= 0.16;
+                    if (wp[i + 1] < -1.2) {
+                        const x = (Math.random() - 0.5) * 18, z = (Math.random() - 0.5) * 18;
+                        wp[i] = x; wp[i + 1] = 8.5; wp[i + 2] = z;
+                        wp[i + 3] = x + 0.03; wp[i + 4] = 8.82; wp[i + 5] = z + 0.03;
+                    }
+                }
+            } else {
+                for (let i = 0; i < wp.length; i += 3) {
+                    wp[i + 1] -= 0.012;
+                    wp[i] += Math.sin(t + i) * 0.003;
+                    if (wp[i + 1] < -1.2) wp[i + 1] = 8;
+                }
             }
             weatherPoints.geometry.attributes.position.needsUpdate = true;
         }
@@ -419,11 +500,6 @@
         });
         lanternLight.intensity = g * 1.1;
 
-        // Nav pills follow the sky: dark glass at night, light glass by day
-        if (activeScene === 'reef' && !isSubmerged && !overlayOpen()) {
-            const dark = document.body.classList.contains('sky-dark');
-            document.querySelectorAll('.top-nav, .side-nav').forEach(n => n.classList.toggle('theme-dark', dark));
-        }
         document.getElementById('sky-word').classList.toggle('show', activeScene === 'reef' && !isSubmerged);
         document.getElementById('dive-cue').classList.toggle('show',
             activeScene === 'reef' && !isSubmerged && !overlayOpen() && document.querySelector('.side-nav.visible') !== null);
@@ -431,5 +507,6 @@
 
     applyLook();
     fetchSky();
-    setInterval(applyLook, 60 * 1000); // follow the clock
+    setInterval(applyLook, 60 * 1000);      // follow the clock
+    setInterval(fetchSky, 10 * 60 * 1000);  // refresh the weather every 10 minutes
 })();
