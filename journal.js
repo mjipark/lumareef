@@ -99,26 +99,78 @@ function renderJournalList() {
     const listEl = document.getElementById('journal-entry-list');
     if (!listEl) return;
 
-    let entries = getJournalEntries().slice().reverse(); // newest first
+    let entries = getJournalEntries().slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // newest first
 
     if (calSelectedDateKey) {
         entries = entries.filter(e => getLocalDateKey(e.createdAt) === calSelectedDateKey);
     }
 
+    const filterLabel = document.getElementById('days-filter-label');
+    if (filterLabel) {
+        filterLabel.textContent = calSelectedDateKey
+            ? new Date(calSelectedDateKey + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+            : 'All entries, newest first';
+    }
+
     if (entries.length === 0) {
         listEl.innerHTML = calSelectedDateKey
-            ? '<p class="journal-empty">No check-ins on this date.</p>'
-            : '<p class="journal-empty">No check-ins yet. Write your first one above.</p>';
+            ? '<div class="journal-empty"><strong>Nothing written on this day.</strong><span class="mono">Pick another date, or tap it again to see everything.</span></div>'
+            : '<div class="journal-empty"><strong>Your first entry will appear here.</strong><span class="mono">Each one grows a coral in your reef and the aquarium.</span></div>';
+        if (typeof updateJournalStats === 'function') updateJournalStats();
         return;
     }
 
-    listEl.innerHTML = entries.map(entry => `
-        <div class="journal-entry">
-            <div class="journal-entry-date">${formatEntryDate(entry.createdAt)}</div>
-            <div class="journal-entry-text">${escapeHtml(entry.text)}</div>
-            ${entry.images && entry.images.length ? `<div class="journal-entry-images">${entry.images.map(src => `<img class="journal-entry-img" src="${src}" alt="Attached photo">`).join('')}</div>` : ''}
-        </div>
-    `).join('');
+    const MOOD_NAME = { positive: 'Bright', neutral: 'Steady', negative: 'Heavy', mixed: 'Mixed' };
+    let lastMonth = '';
+    listEl.innerHTML = entries.map(entry => {
+        const monthLabel = new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        const divider = monthLabel !== lastMonth ? `<h3 class="month-divider mono">${monthLabel}</h3>` : '';
+        lastMonth = monthLabel;
+        const a = entry.analysis || {};
+        const mood = a.sentiment || 'pending';
+        const themes = Array.isArray(a.themes) ? a.themes.slice(0, 3) : [];
+        return `${divider}
+        <article class="journal-entry mood-${mood}">
+            <div class="entry-rail"><span class="entry-dot"></span></div>
+            <div class="entry-body">
+                <div class="journal-entry-date mono">${formatEntryDate(entry.createdAt)}</div>
+                <div class="journal-entry-text">${escapeHtml(entry.text)}</div>
+                ${entry.images && entry.images.length ? `<div class="journal-entry-images">${entry.images.map(src => `<img class="journal-entry-img" src="${src}" alt="Attached photo">`).join('')}</div>` : ''}
+                <div class="entry-tags mono">
+                    <span class="mood-tag">${MOOD_NAME[mood] || 'Reading the mood…'}</span>
+                    ${themes.map(t => `<span>#${escapeHtml(String(t))}</span>`).join('')}
+                </div>
+            </div>
+        </article>`;
+    }).join('');
+    if (typeof updateJournalStats === 'function') updateJournalStats();
+}
+
+// Numbers and mood mix in the Journal's left column
+function updateJournalStats() {
+    const entries = getJournalEntries();
+    const days = new Set(entries.map(e => getLocalDateKey(e.createdAt)));
+    const now = new Date();
+    const monthPrefix = getLocalDateKey(now).slice(0, 7);
+    let streak = 0;
+    const d = new Date(now);
+    if (!days.has(getLocalDateKey(d))) d.setDate(d.getDate() - 1); // today not written yet still keeps yesterday's streak
+    while (days.has(getLocalDateKey(d))) { streak++; d.setDate(d.getDate() - 1); }
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('stat-total', entries.length);
+    set('stat-month', [...days].filter(k => k.startsWith(monthPrefix)).length);
+    set('stat-streak', streak);
+    set('past-count', entries.length);
+
+    const counts = { positive: 0, neutral: 0, mixed: 0, negative: 0 };
+    entries.forEach(e => { const s = e.analysis && e.analysis.sentiment; if (counts[s] != null) counts[s]++; });
+    const total = Object.values(counts).reduce((x, y) => x + y, 0);
+    const bar = document.getElementById('mood-mix-bar'), legend = document.getElementById('mood-mix-legend');
+    const NAMES = { positive: 'Bright', neutral: 'Steady', mixed: 'Mixed', negative: 'Heavy' };
+    if (bar) bar.innerHTML = total ? Object.keys(counts).filter(k => counts[k]).map(k => `<i class="mood-${k}" style="flex:${counts[k]}"></i>`).join('') : '';
+    if (legend) legend.innerHTML = total
+        ? Object.keys(counts).filter(k => counts[k]).map(k => `<span><b class="mood-${k}"></b>${NAMES[k]} ${Math.round(counts[k] / total * 100)}%</span>`).join('')
+        : 'Your moods will show up here.';
 }
 
 // Minimal HTML escaping since entry text is user-authored and gets injected via innerHTML
@@ -275,6 +327,7 @@ async function submitJournalEntry(text, images = [], onStatusUpdate) {
     if (typeof analyzeJournalEntry === 'function') {
         const analysis = await analyzeJournalEntry(text);
         updateJournalEntryAnalysis(entry.id, analysis);
+        if (typeof renderJournalList === 'function') renderJournalList(); // show the mood tag
         console.log('Entry analysis:', analysis);
 
         if (typeof spawnFromAnalysis === 'function') {
@@ -372,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (notebookDateHeader) {
         const now = new Date();
         notebookDateHeader.textContent = now.toLocaleDateString(undefined, {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            weekday: 'long', month: 'long', day: 'numeric'
         });
     }
 

@@ -182,6 +182,58 @@
         });
     }
 
+    // ---- 7b. Journal: writing prompts and a character count ------------------------
+    const ta = document.getElementById('journal-page-textarea');
+    const count = document.getElementById('write-count');
+    function syncCount() { if (ta && count) count.textContent = `${ta.value.length} / 2000`; }
+    if (ta) ta.addEventListener('input', syncCount);
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            if (!ta) return;
+            const start = chip.textContent + ': ';
+            ta.value = ta.value.trim() ? ta.value.replace(/\s*$/, '\n\n') + start : start;
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            syncCount();
+        });
+    });
+    const saveBtn = document.getElementById('journal-page-submit');
+    if (saveBtn) saveBtn.addEventListener('click', () => setTimeout(syncCount, 50));
+
+    // ---- 7c. Journal tabs: Write today / Past entries, with search -----------------
+    const tabs = document.querySelectorAll('.journal-tab');
+    const pill = document.querySelector('.journal-tab-pill');
+    function showTab(name) {
+        tabs.forEach(t => { const on = t.dataset.tab === name; t.classList.toggle('active', on); t.setAttribute('aria-selected', String(on)); });
+        document.querySelectorAll('#journal-page .tab-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+        const active = document.querySelector('.journal-tab.active');
+        if (pill && active) { pill.style.width = active.offsetWidth + 'px'; pill.style.transform = `translateX(${active.offsetLeft - 4}px)`; }
+    }
+    tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+    document.querySelectorAll('[data-go-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.goTab)));
+    // Picking a date in the calendar jumps to Past entries for that day
+    const calGrid = document.getElementById('cal-grid');
+    if (calGrid) calGrid.addEventListener('click', e => { if (e.target.closest('.cal-day')) setTimeout(() => showTab('past'), 30); });
+    const journalPage = document.getElementById('journal-page');
+    if (journalPage) new MutationObserver(() => { if (!journalPage.classList.contains('hidden')) requestAnimationFrame(() => showTab(document.querySelector('.journal-tab.active')?.dataset.tab || 'write')); })
+        .observe(journalPage, { attributes: true, attributeFilter: ['class'] });
+    const search = document.getElementById('entry-search');
+    function applySearch() {
+        const q = (search && search.value || '').trim().toLowerCase();
+        let shown = 0;
+        document.querySelectorAll('#journal-entry-list .journal-entry').forEach(card => {
+            const hit = !q || card.textContent.toLowerCase().includes(q);
+            card.style.display = hit ? '' : 'none';
+            if (hit) shown++;
+        });
+        document.querySelectorAll('#journal-entry-list .month-divider').forEach(d => { d.style.display = q ? 'none' : ''; });
+        const empty = document.getElementById('search-empty');
+        if (empty) empty.hidden = !(q && shown === 0);
+    }
+    if (search) search.addEventListener('input', applySearch);
+    const listEl2 = document.getElementById('journal-entry-list');
+    if (listEl2) new MutationObserver(applySearch).observe(listEl2, { childList: true });
+
     // ---- 8. Magnetic buttons ---------------------------------------------------------
     if (fine && !reduced) {
         document.querySelectorAll('.notebook-save-btn, .sound-toggle, .nav-orb, .menu-toggle').forEach(btn => {

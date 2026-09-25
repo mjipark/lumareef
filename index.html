@@ -122,15 +122,26 @@
          a calendar (circle-highlights days with entries) side-by-side with
          a diary text area to check in directly from here, plus the entry
          list below, filterable by the calendar's selected date. -->
+    <!-- Journal: left column is your overview (stats, mood mix, calendar),
+         right column is the page you write on, with your days below it.
+         The element ids are the ones journal.js already uses. -->
     <div id="journal-page" class="journal-page hidden">
-        <div class="journal-scroll">
-            <p class="section-tag">Journal</p>
-            <h1 class="journal-page-title display-mix">Write it <em>down</em>,<br>let it grow</h1>
-            <p class="journal-page-subtitle mono">Write a new entry, or tap a date to revisit one. Every entry becomes part of your reef.</p>
+        <div class="journal-scroll journal-layout">
+            <aside class="journal-side">
+                <p class="section-tag">Journal</p>
+                <h1 class="journal-page-title display-mix">Write it <em>down</em>,<br>let it grow</h1>
 
-            <div class="journal-top-row">
-                <!-- Calendar widget: liquid-glass card, month grid, circle
-                     marker on any day with at least one saved entry. -->
+                <div class="journal-stats" aria-label="Your journal so far">
+                    <div><strong id="stat-total">0</strong><span class="mono">entries</span></div>
+                    <div><strong id="stat-month">0</strong><span class="mono">days this month</span></div>
+                    <div><strong id="stat-streak">0</strong><span class="mono">day streak</span></div>
+                </div>
+
+                <div class="mood-mix">
+                    <div class="mood-mix-bar" id="mood-mix-bar" aria-hidden="true"></div>
+                    <div class="mood-mix-legend mono" id="mood-mix-legend">Your moods will show up here.</div>
+                </div>
+
                 <div class="journal-calendar">
                     <div class="journal-calendar-header">
                         <button type="button" id="cal-prev-month" class="cal-nav-btn" aria-label="Previous month">&#8249;</button>
@@ -140,40 +151,66 @@
                     <div class="journal-calendar-weekdays">
                         <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                     </div>
-                    <div class="journal-calendar-grid" id="cal-grid">
-                        <!-- populated by journal.js -->
-                    </div>
-                    <button type="button" id="cal-clear-filter" class="cal-clear-btn hidden">Show all entries</button>
+                    <div class="journal-calendar-grid" id="cal-grid"></div>
+                    <button type="button" id="cal-clear-filter" class="cal-clear-btn hidden">Show all days</button>
+                </div>
+            </aside>
+
+            <section class="journal-main">
+                <div class="journal-tabs" role="tablist" aria-label="Journal view">
+                    <span class="journal-tab-pill" aria-hidden="true"></span>
+                    <button type="button" role="tab" class="journal-tab active" data-tab="write" aria-selected="true">Write today</button>
+                    <button type="button" role="tab" class="journal-tab" data-tab="past" aria-selected="false">Past entries <span class="tab-count" id="past-count">0</span></button>
                 </div>
 
-                <!-- Diary notebook write area -->
-                <div class="journal-notebook" id="journal-notebook">
-                    <div class="notebook-overlay"></div>
+                <div class="tab-pane active" data-pane="write">
+                <div class="journal-notebook write-card" id="journal-notebook">
                     <div class="notebook-content">
-                        <div class="notebook-date-header" id="notebook-date-header"></div>
-                        <textarea id="journal-page-textarea" class="journal-page-textarea" placeholder="Dear diary..." maxlength="2000"></textarea>
-
-                        <!-- Image attachments strip -->
+                        <div class="write-head">
+                            <div class="notebook-date-header mono" id="notebook-date-header"></div>
+                            <span class="write-hint mono">Saved only on this device</span>
+                        </div>
+                        <textarea id="journal-page-textarea" class="journal-page-textarea" placeholder="How did today feel?" maxlength="2000"></textarea>
+                        <div class="write-prompts" id="write-prompts" aria-label="Need a prompt?">
+                            <span class="mono">Need a start?</span>
+                            <button type="button" class="prompt-chip">One small thing that went well</button>
+                            <button type="button" class="prompt-chip">Something on my mind</button>
+                            <button type="button" class="prompt-chip">Who I was grateful for</button>
+                        </div>
                         <div class="notebook-attachments" id="notebook-attachments"></div>
-
                         <div class="journal-write-actions">
                             <div class="notebook-toolbar">
-                                <label class="notebook-attach-btn" for="notebook-img-input" title="Attach image">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <label class="notebook-attach-btn" for="notebook-img-input" title="Add a photo">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                     Photo
                                 </label>
                                 <input type="file" id="notebook-img-input" accept="image/*" multiple style="display:none">
-                                <span class="journal-write-status" id="journal-write-status"></span>
+                                <span class="write-count mono" id="write-count">0 / 2000</span>
+                                <span class="journal-write-status mono" id="journal-write-status"></span>
                             </div>
-                            <button type="button" id="journal-page-submit" class="notebook-save-btn">Save Entry</button>
+                            <button type="button" id="journal-page-submit" class="notebook-save-btn">Save entry <span aria-hidden="true">→</span></button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="journal-entry-list" class="journal-entry-list">
-                <!-- populated by journal.js -->
-            </div>
+                <p class="write-after mono">Saved entries live under <button type="button" class="link-btn" data-go-tab="past">Past entries</button>.</p>
+                </div>
+
+                <div class="tab-pane" data-pane="past">
+                    <div class="days-head">
+                        <div>
+                            <h2 class="display-mix">Your <em>days</em></h2>
+                            <span class="mono" id="days-filter-label">All entries, newest first</span>
+                        </div>
+                        <label class="entry-search">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                            <input type="search" id="entry-search" placeholder="Search your entries" aria-label="Search your entries">
+                        </label>
+                    </div>
+                    <div id="journal-entry-list" class="journal-entry-list timeline"></div>
+                    <p class="search-empty mono" id="search-empty" hidden>No entries match that search.</p>
+                </div>
+            </section>
         </div>
     </div>
 
