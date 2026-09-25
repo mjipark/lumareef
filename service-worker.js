@@ -1,7 +1,7 @@
 // LumaReef Service Worker
 // Caches all static assets for offline use so the app works without internet.
 
-const CACHE_NAME = 'lumareef-v7';
+const CACHE_NAME = 'lumareef-v8';
 
 // All files to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -24,6 +24,7 @@ const PRECACHE_ASSETS = [
   './assets/icon-512.png',
   './assets/note.png',
   './assets/Island.png',
+  './assets/island.glb',
   './assets/f2.png',
   './assets/ttt_1.png',
   './assets/ttt_2.png',

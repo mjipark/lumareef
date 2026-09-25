@@ -24,31 +24,31 @@
     const LOOKS = {
         night: { // pastel night: periwinkle and lilac rather than black
             skyTop: '#5d6aa8', skyBottom: '#a9b4e0', fog: '#9aa7d8',
-            water1: '#6f86c2', water2: '#8195cc',
+            water1: '#8d9dd0', water2: '#a3a9d8',
             ambient: '#c9cff5', ambientI: 0.6, sun: '#dfe4ff', sunI: 0.3,
             cloud: '#c3c9ee', glow: 1.0, stars: 1.0, ink: 'light'
         },
         dawn: {
-            skyTop: '#7d8fb8', skyBottom: '#f3c2a6', fog: '#e9c3b0',
-            water1: '#7fa9b4', water2: '#94b9c0',
-            ambient: '#ffd9c7', ambientI: 0.65, sun: '#ffb996', sunI: 0.5,
-            cloud: '#fde3d6', glow: 0.35, stars: 0.15, ink: 'dark'
+            skyTop: '#ece9fb', skyBottom: '#fde3dc', fog: '#f3e4e8',
+            water1: '#a8c2de', water2: '#cdb9dc',
+            ambient: '#ffe6dc', ambientI: 0.72, sun: '#ffc9b0', sunI: 0.5,
+            cloud: '#fff1ec', glow: 0.35, stars: 0.15, ink: 'dark'
         },
-        day: {
-            skyTop: '#bfe6ea', skyBottom: '#9fd3d6', fog: '#a3d6d8',
-            water1: '#76abae', water2: '#88bdbd',
-            ambient: '#ffffff', ambientI: 0.75, sun: '#ffffff', sunI: 0.55,
+        day: { // the same mint / periwinkle / lavender family as Journal and About
+            skyTop: '#eef1fb', skyBottom: '#e1f1ee', fog: '#e5eef4',
+            water1: '#98cdc8', water2: '#aec3ea',
+            ambient: '#ffffff', ambientI: 0.8, sun: '#ffffff', sunI: 0.5,
             cloud: '#ffffff', glow: 0.0, stars: 0.0, ink: 'dark'
         },
         golden: {
-            skyTop: '#9ec5d6', skyBottom: '#f6d29a', fog: '#f0d2a4',
-            water1: '#7aa6a2', water2: '#9cb8a8',
-            ambient: '#ffe6c2', ambientI: 0.7, sun: '#ffc27a', sunI: 0.65,
-            cloud: '#fff1dc', glow: 0.2, stars: 0.0, ink: 'dark'
+            skyTop: '#f1ecfb', skyBottom: '#f8e8e4', fog: '#f3e9e8',
+            water1: '#a9cfc8', water2: '#dcc4c6',
+            ambient: '#fff0dc', ambientI: 0.75, sun: '#ffd2a0', sunI: 0.6,
+            cloud: '#fff6ea', glow: 0.2, stars: 0.0, ink: 'dark'
         },
         dusk: { // lilac to peach
             skyTop: '#8d86c9', skyBottom: '#f4b9a8', fog: '#d9aebb',
-            water1: '#8a9fc6', water2: '#9eadcf',
+            water1: '#a9b3dc', water2: '#c3b6dc',
             ambient: '#f0d2e2', ambientI: 0.6, sun: '#ffb7a0', sunI: 0.45,
             cloud: '#f6d3dc', glow: 0.7, stars: 0.4, ink: 'light'
         }
@@ -237,7 +237,7 @@
     const GLOW_TEX = glowTexture();
 
     // Fog lets the far ocean melt into the sky -- the single biggest depth cue
-    scene.fog = new THREE.Fog(0xa3d6d8, 15, 30);
+    scene.fog = new THREE.Fog(0xa3d6d8, 18, 36);
 
     // Floating plankton / motes around the island
     const MOTE_COUNT = 260;
@@ -302,13 +302,15 @@
     // Island lanterns: small warm lights on the terraces that glow after dark,
     // echoing the lit windows in the start-screen illustration
     const lanterns = [];
-    const lanternSpots = [[-0.1, -0.18, -0.9], [-0.9, -0.18, -0.05], [0.75, -0.48, -0.75], [1.2, -0.73, 0.5], [0.2, -0.18, -0.1]];
+    // Positions of the lamp and window voxels in the island model (see model/build_island.py)
+    const lanternSpots = [[1.232, -0.497, -0.024], [1.315, -0.497, -0.189], [-0.583, -0.579, 0.883], [0.653, -0.579, 0.967], [0.407, -0.083, -0.189], [1.56, -0.497, -0.435], [-0.748, -0.332, -0.602], [0.242, -0.825, 1.544]];
     lanternSpots.forEach(([x, y, z]) => {
         const core = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true }));
         core.position.set(x, y, z);
         const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, color: 0xffd98a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-        halo.scale.set(0.7, 0.7, 0.7);
+        halo.scale.set(0.45, 0.45, 0.45);
         halo.position.copy(core.position);
+        core.visible = false; // the model has its own lit voxels; we only add the glow
         scene.add(core); scene.add(halo);
         lanterns.push({ core, halo, phase: Math.random() * 6.28 });
     });
@@ -356,7 +358,7 @@
         });
         state.phase = phase;
         state.nightFactor = look.glow;
-        state.fogFar = 30 - Math.min(overcast, 1) * 9;
+        state.fogFar = 36 - Math.min(overcast, 1) * 10;
 
         const L = state.look;
         // The far edge of the ocean dissolves into fog, so the visible sky

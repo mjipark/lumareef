@@ -100,76 +100,25 @@ const landCenters = [
     { x:  0.8, z:  0.9 }  
 ];
 
-// Main Base Island Segment
-createVoxel(1.4, 0.8, 1.4, -0.4, -0.6, -0.4, grass, sideNavy);
-
-// Asymmetric Pastel Tree Assembly
-createVoxel(0.2, 0.6, 0.2, -0.8, 0.1, -0.8, trunkBrown, trunkSide); 
-createVoxel(0.65, 0.65, 0.65, -0.8, 0.72, -0.8, leafGreen, leafSide);   
-createVoxel(0.35, 0.45, 0.35, -1.05, 0.72, -0.8, leafGreen, leafSide);
-createVoxel(0.3, 0.35, 0.3, -0.55, 0.62, -0.8, leafGreen, leafSide);
-
-// Middle Step Terrace
-createVoxel(0.9, 0.5, 1.1, 0.5, -0.75, -0.3, grass, sideNavy);
-
-// Far Right Platform Terrace
-createVoxel(0.6, 0.3, 0.6, 1.1, -0.9, 0.2, grass, sideNavy);
-
-// Detached Cascading Chunk Platform Component
-createVoxel(0.35, 0.15, 0.35, 0.8, -1.0, 0.9, grass, sideNavy);
-
-
-// 6. PROCEDURAL FORGE: Dynamic Distance-Based Shoreline Grid
-const baseVoxelSize = 0.26;
-const gridRange = 1.2; 
-const stepInterval = 0.23; 
-
-function lerpColor(colorStart, colorEnd, percent) {
-    const c1 = new THREE.Color(colorStart);
-    const c2 = new THREE.Color(colorEnd);
-    return c1.lerp(c2, percent).getHex();
-}
-
-for (let x = -2.5; x <= 2.5; x += stepInterval) {
-    for (let z = -2.5; z <= 2.5; z += stepInterval) {
-        
-        let minDistance = Infinity;
-        landCenters.forEach(center => {
-            const dist = Math.sqrt((x - center.x) ** 2 + (z - center.z) ** 2);
-            if (dist < minDistance) minDistance = dist;
+// The island itself is a real 3D model now (assets/island.glb), built by
+// model/build_island.py -- terraces, trees, a cottage, lamps and a waterfall.
+// It can also be opened in Blender or Unity.
+const islandModel = new THREE.Group();
+islandModel.position.set(0.2, -0.95, 0.1);
+islandModel.scale.setScalar(1.5);
+scene.add(islandModel);
+if (THREE.GLTFLoader) {
+    new THREE.GLTFLoader().load('assets/island.glb', gltf => {
+        gltf.scene.traverse(o => {
+            if (!o.isMesh) return;
+            o.geometry.computeVertexNormals();
+            const isGlow = /glow/i.test(o.name) || (o.parent && /glow/i.test(o.parent.name));
+            o.material = isGlow
+                ? new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })
+                : new THREE.MeshLambertMaterial({ vertexColors: true });
         });
-
-        if (minDistance > 0.35 && minDistance <= gridRange) {
-            
-            const factor = (minDistance - 0.35) / (gridRange - 0.35);
-            
-            const dynamicScale = THREE.MathUtils.lerp(1.0, 0.45, factor);
-            const finalSize = (baseVoxelSize * dynamicScale) - 0.01;
-
-            const nearColorTop = 0x3d6466; 
-            const farColorTop = 0xCEE5D0;  
-            const dynamicTopColor = lerpColor(nearColorTop, farColorTop, factor);
-            
-            const nearColorSide = 0x274042;
-            const farColorSide = 0x94B49F;
-            const dynamicSideColor = lerpColor(nearColorSide, farColorSide, factor);
-
-            const dynamicY = -1.05 - (factor * 0.06);
-            const dynamicOpacity = 0.75 * (1.0 - factor);
-
-            createVoxel(
-                finalSize, 
-                0.16 * dynamicScale, 
-                finalSize, 
-                x, 
-                dynamicY, 
-                z, 
-                dynamicTopColor, 
-                dynamicSideColor,
-                dynamicOpacity
-            );
-        }
-    }
+        islandModel.add(gltf.scene);
+    }, undefined, err => console.error('Island model failed to load:', err));
 }
 
 

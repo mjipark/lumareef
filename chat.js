@@ -125,6 +125,8 @@ async function sendChatMessage(userText) {
 
     // 4. Show a "thinking" placeholder bubble
     const thinkingBubble = appendThinkingBubble();
+    const panel = document.getElementById('chat-panel');
+    if (panel) panel.classList.add('is-thinking');
 
     try {
         // 5. Call our Vercel serverless function (/api/chat)
@@ -177,6 +179,8 @@ async function sendChatMessage(userText) {
         chatHistory.pop(); // remove failed user turn
     }
 
+    if (panel) panel.classList.remove('is-thinking');
+
     // 10. Crisis resources shown independent of API result
     if (isCrisis) {
         appendCrisisResources();
@@ -185,6 +189,24 @@ async function sendChatMessage(userText) {
 
 
 
+
+// Quick-start replies shown under the greeting; tapping one sends it
+const CHAT_SUGGESTIONS = ['I had a good day', "I'm feeling a bit anxious", 'What did I write this week?', 'I just need to vent'];
+function appendSuggestions() {
+    const messagesEl = document.getElementById('chat-messages');
+    if (!messagesEl) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-suggestions';
+    CHAT_SUGGESTIONS.forEach(text => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chat-chip';
+        b.textContent = text;
+        b.addEventListener('click', () => { wrap.remove(); sendChatMessage(text); });
+        wrap.appendChild(b);
+    });
+    messagesEl.appendChild(wrap);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const talkBtn = document.getElementById('talk-to-fish-btn');
@@ -202,14 +224,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const messagesEl = document.getElementById('chat-messages');
             if (messagesEl && messagesEl.children.length === 0) {
                 appendChatMessage('assistant', "Oh, hi there! I've been swimming around your reef thinking about you. How are you doing today, sweet friend?");
+                appendSuggestions();
             }
+            setTimeout(() => chatInput && chatInput.focus(), 350);
         });
     }
+
+    // The box grows with what you type (up to a few lines); Send lights up
+    // only when there's something to send
+    function syncInput() {
+        if (!chatInput) return;
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+        if (chatSend) chatSend.disabled = !chatInput.value.trim();
+    }
+    if (chatInput) chatInput.addEventListener('input', syncInput);
 
     function handleSend() {
         const text = chatInput.value.trim();
         if (!text) return;
         chatInput.value = '';
+        syncInput();
+        const chips = document.querySelector('.chat-suggestions');
+        if (chips) chips.remove();
         sendChatMessage(text);
     }
 
