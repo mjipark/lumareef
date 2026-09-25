@@ -76,14 +76,25 @@ for (let x = -tankHalf + floorMargin; x < tankHalf - floorMargin; x += tankFloor
 // 3. Coral using the agent.js helpers, kept inside the cube's bounds.
 // Fish spawning removed for now -- the Tank of Echoes currently shows only
 // coral (the "past reflections" themselves), without the fish layer.
+// One coral per recent journal entry, tinted by that entry's mood, so the
+// tank really is made of past reflections. Falls back to a few soft-teal
+// corals when there are no entries yet.
 const innerMargin = 0.5; // keep lifeforms away from the glass walls
-for (let i = 0; i < 4; i++) {
-    spawnCoral({
-        x: (Math.random() - 0.5) * (tankSize - innerMargin * 2),
-        y: floorY + 0.3,
-        z: (Math.random() - 0.5) * (tankSize - innerMargin * 2)
-    }, tankScene);
-}
+(function spawnTankCoralFromEntries() {
+    let entries = [];
+    try { entries = JSON.parse(localStorage.getItem('lumareef_entries') || '[]'); } catch (e) { entries = []; }
+    const recent = entries.slice(-12);
+    const count = recent.length || 4;
+    for (let i = 0; i < count; i++) {
+        const sentiment = recent[i] && recent[i].analysis ? recent[i].analysis.sentiment : 'neutral';
+        const color = coralColorBySentiment[sentiment] || coralColorBySentiment.neutral;
+        spawnCoral({
+            x: (Math.random() - 0.5) * (tankSize - innerMargin * 2),
+            y: floorY + 0.1,
+            z: (Math.random() - 0.5) * (tankSize - innerMargin * 2)
+        }, tankScene, color, 1.2);
+    }
+})();
 
 // 4. Glowing ambient particle dots, like the soft lights floating inside the reference cube
 const particleCount = 14;

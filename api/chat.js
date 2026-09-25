@@ -44,7 +44,12 @@ module.exports = async (req, res) => {
         const geminiReqBody = {
             contents,
             generationConfig: {
-                maxOutputTokens: max_tokens || 1024
+                maxOutputTokens: max_tokens || 1024,
+                // Gemini 2.5 Flash "thinks" before answering, and those thinking
+                // tokens count against maxOutputTokens. With small budgets (200-300)
+                // the JSON for mood analysis and island summaries was getting cut
+                // off mid-object. These replies are short, so turn thinking off.
+                thinkingConfig: { thinkingBudget: 0 }
             }
         };
 

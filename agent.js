@@ -33,13 +33,38 @@ function spawnFish(position = { x: 0, y: -2.5, z: 0 }, targetScene = scene, trac
 }
 
 // Function to add "Coral" (Records/Memories)
-function spawnCoral(position = { x: 0, y: -1.5, z: 0 }, targetScene = scene) {
-    const geo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
-    const mat = new THREE.MeshLambertMaterial({ color: 0xff6b6b });
-    const coral = new THREE.Mesh(geo, mat);
-    
-    coral.position.set(position.x, position.y, position.z);
-    targetScene.add(coral);
+// Builds a small branching voxel coral: a trunk plus 1-3 shorter side
+// branches, so coral reads as coral instead of a single tall box.
+function spawnCoral(position = { x: 0, y: -1.5, z: 0 }, targetScene = scene, color = 0x8fcfc8, scale = 1) {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color: color });
+    const tipMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.35) });
+    const s = 0.14 * scale;
+    const trunkH = (0.35 + Math.random() * 0.35) * scale;
+
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(s, trunkH, s), mat);
+    trunk.position.y = trunkH / 2;
+    group.add(trunk);
+    const trunkTip = new THREE.Mesh(new THREE.BoxGeometry(s * 1.15, s * 0.7, s * 1.15), tipMat);
+    trunkTip.position.y = trunkH + s * 0.3;
+    group.add(trunkTip);
+
+    const branches = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < branches; i++) {
+        const angle = (i / branches) * Math.PI * 2 + Math.random();
+        const h = trunkH * (0.4 + Math.random() * 0.35);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(s * 0.85, h, s * 0.85), mat);
+        b.position.set(Math.cos(angle) * s * 1.4, h / 2 + trunkH * 0.25, Math.sin(angle) * s * 1.4);
+        group.add(b);
+        const tip = new THREE.Mesh(new THREE.BoxGeometry(s, s * 0.6, s), tipMat);
+        tip.position.set(b.position.x, trunkH * 0.25 + h + s * 0.25, b.position.z);
+        group.add(tip);
+    }
+
+    group.position.set(position.x, position.y, position.z);
+    group.rotation.y = Math.random() * Math.PI;
+    targetScene.add(group);
+    return group;
 }
 
 // Animate these lifeforms in the loop
@@ -71,9 +96,10 @@ function addSupportElement(type) {
 // Coral color varies by sentiment, so the reef visually reflects emotional tone
 // over time rather than always being the same red.
 const coralColorBySentiment = {
-    positive: 0xffb86b, // warm coral/orange
-    neutral: 0x8fb8b0,  // muted teal-grey
-    negative: 0x6b7fa3  // cool blue-violet
+    positive: 0xf2a488, // soft coral (stands out from the sand floor)
+    neutral: 0x8fcfc8,  // soft teal
+    negative: 0x8fa6cc, // cool periwinkle
+    mixed: 0xc995b8     // dusty rose
 };
 
 /**
@@ -111,10 +137,5 @@ function spawnFromAnalysis(analysis, position = null, targetScene = scene) {
 // Same as spawnCoral, but with a configurable color so sentiment can tint it
 // without needing to touch the original spawnCoral() callers elsewhere.
 function spawnCoralWithColor(position, targetScene, color) {
-    const geo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
-    const mat = new THREE.MeshLambertMaterial({ color: color });
-    const coral = new THREE.Mesh(geo, mat);
-
-    coral.position.set(position.x, position.y, position.z);
-    targetScene.add(coral);
+    return spawnCoral(position, targetScene, color);
 }

@@ -1992,3 +1992,208 @@ body {
     .journal-page-title { font-size: 24px; }
     .notebook-content { padding: 20px 18px 16px; }
 }
+
+/* ==========================================================================
+   Visual upgrade, part 2: typography, guide bar, chat, About page.
+   Fraunces (display) + Inter (text) -- same pairing as the portfolio site.
+   ========================================================================== */
+:root {
+    --lr-display: 'Fraunces', Georgia, serif;
+    --lr-text: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+body, #ui-layer, .journal-page, .guide-bar, .side-panel, .island-widget,
+.tank-bubble-tooltip, .talk-to-fish-btn, .modal-box, #start-overlay {
+    font-family: var(--lr-text);
+}
+
+/* One title style everywhere: Your Reef, Tank of Echoes, Journal, About */
+#month-title,
+.journal-page-title,
+.panel-title,
+.island-widget-title {
+    font-family: var(--lr-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    text-transform: none;
+}
+#month-title { font-size: 34px; }
+.journal-page-title { font-size: 44px; line-height: 1.1; color: var(--lr-ink); }
+.brand p { font-family: var(--lr-text); font-weight: 500; }
+#status-text { font-size: 12.5px; font-weight: 500; }
+
+/* ---- Guide bar: a compact card instead of a full-width banner ---- */
+.guide-bar {
+    left: 50%;
+    right: auto;
+    width: min(620px, calc(100vw - 40px));
+    transform: translate(-50%, 40px);
+    padding: 14px 20px;
+    gap: 16px;
+    border-radius: 20px;
+}
+.guide-bar.visible { transform: translate(-50%, 0); }
+.guide-bar.theme-light {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 12px 36px rgba(36, 66, 63, 0.16);
+}
+.guide-bar.theme-light .guide-bar-text { color: var(--lr-ink); }
+.guide-bar.theme-dark {
+    background: rgba(12, 36, 41, 0.78);
+    border-color: rgba(143, 207, 200, 0.25);
+}
+.guide-bar-text, #guide-bar-text { font-size: 14px; line-height: 1.5; }
+.guide-bar-icon-frame { width: 48px; height: 48px; flex-shrink: 0; }
+.guide-bar-hint-touch { display: none; font-size: 12px; opacity: 0.6; white-space: nowrap; }
+@media (hover: none) {
+    .guide-bar-hint { display: none !important; }
+    .guide-bar-hint-touch { display: block; }
+}
+
+/* ---- Talk to a fish + chat ---- */
+.talk-to-fish-btn {
+    font-family: var(--lr-text);
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--lr-ink);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+@media (min-width: 769px) {
+    /* keep the chat clear of the right-hand nav pill */
+    #chat-panel { right: 112px; top: 24px; bottom: 24px; height: auto; width: min(400px, 40vw); }
+    #chat-panel .chat-panel-box {
+        height: 100%;
+        width: 100%;
+        padding: 20px !important;
+        background: rgba(10, 30, 35, 0.72) !important;
+        border: 1px solid rgba(143, 207, 200, 0.22) !important;
+        border-radius: 24px;
+        backdrop-filter: blur(18px) !important;
+        -webkit-backdrop-filter: blur(18px) !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+    }
+    #chat-panel .panel-close { color: #ffffff; top: 14px; right: 16px; }
+}
+.chat-header {
+    background: transparent;
+    padding: 0 0 14px;
+    border-bottom: 1px solid rgba(143, 207, 200, 0.2);
+    border-radius: 0;
+    box-shadow: none;
+}
+.chat-header-icon { width: 48px; height: 48px; }
+.chat-header .panel-title { color: #ffffff; font-size: 22px; }
+.chat-header .panel-subtitle { color: rgba(228, 241, 240, 0.7); opacity: 1; }
+.chat-msg { font-size: 14px; border-radius: 16px; }
+.chat-msg-assistant { background: rgba(244, 249, 248, 0.94); border-bottom-left-radius: 6px; }
+.chat-msg-user { background: var(--lr-teal); border-bottom-right-radius: 6px; }
+.chat-input { font-family: var(--lr-text); }
+.chat-send-btn { background: var(--lr-teal) !important; color: #fff !important; }
+.chat-disclaimer { color: rgba(228, 241, 240, 0.7); opacity: 1; }
+
+/* ---- About page ---- */
+.about-scroll { max-width: 860px; }
+.about-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--lr-teal);
+    margin-bottom: 10px;
+}
+.about-lede {
+    font-family: var(--lr-display);
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--lr-ink);
+    max-width: 38ch;
+    margin: 14px 0 40px;
+}
+.about-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.about-step, .about-card {
+    background: var(--lr-card);
+    border: 1px solid var(--lr-card-border);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: var(--lr-shadow);
+}
+.about-step-num {
+    font-family: var(--lr-display);
+    font-size: 15px;
+    color: var(--lr-teal);
+}
+.about-step h3, .about-card h3 {
+    font-family: var(--lr-display);
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--lr-ink);
+    margin: 8px 0 8px;
+}
+.about-step p, .about-card p {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--lr-ink-soft);
+}
+.about-card { margin-bottom: 16px; }
+.about-meta {
+    display: grid;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(36, 66, 63, 0.12);
+    font-size: 14px;
+    color: var(--lr-ink);
+}
+.about-meta span {
+    display: inline-block;
+    min-width: 96px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--lr-ink-soft);
+}
+.about-meta a { color: var(--lr-teal); }
+#about-page .panel-close {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(36, 66, 63, 0.12);
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 5;
+}
+
+/* ---- Island memory card ---- */
+.island-widget {
+    background: rgba(251, 250, 245, 0.97);
+    border: 1px solid rgba(36, 66, 63, 0.08);
+    box-shadow: 0 18px 48px rgba(36, 66, 63, 0.22);
+    border-radius: 20px;
+}
+.island-widget-title { font-size: 22px; }
+
+@media (max-width: 768px) {
+    .about-steps { grid-template-columns: 1fr; }
+    .about-lede { font-size: 19px; }
+    .journal-page-title { font-size: 34px; }
+    #month-title { font-size: 28px; }
+    /* On phones the guide card sits under the page title, so it never
+       covers the bottom nav or the Talk to a fish button. */
+    .guide-bar { top: 215px; bottom: auto; width: calc(100vw - 32px); transform: translate(-50%, -12px); }
+    .guide-bar.visible { transform: translate(-50%, 0); }
+    .talk-to-fish-btn { bottom: 110px; right: 16px; }
+    #about-page .panel-close { top: 16px; right: 16px; }
+}
+
+/* Hide the Talk to a fish button while the chat is open */
+body:has(#chat-panel:not(.hidden)) .talk-to-fish-btn { opacity: 0; pointer-events: none; }

@@ -11,6 +11,9 @@
     <meta name="apple-mobile-web-app-title" content="Luma Reef">
     <link rel="apple-touch-icon" href="assets/icon-192.png">
     <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -155,26 +158,46 @@
         </div>
     </div>
 
-    <!-- About page: proposal and map -->
+    <!-- About page -->
     <div id="about-page" class="journal-page hidden">
-        <div class="journal-scroll">
-            <button type="button" class="panel-close" data-close-panel="about-page">&times;</button>
-            <h1 class="journal-page-title">About Luma Reef</h1>
-            <p class="journal-page-subtitle">Project Proposal and Conceptual Map</p>
+        <div class="journal-scroll about-scroll">
+            <button type="button" class="panel-close" data-close-panel="about-page" aria-label="Close">&times;</button>
+            <p class="about-eyebrow">About the project</p>
+            <h1 class="journal-page-title">Luma Reef</h1>
+            <p class="about-lede">A journal that grows into an underwater world. Each check-in becomes part of a living reef, shaped by how you felt when you wrote it.</p>
 
-            <div class="journal-entry" style="margin-bottom: 24px;">
-                <h3 style="margin-bottom: 12px; font-size: 18px;">Project Explanation</h3>
-                <p class="journal-entry-text" id="about-proposal-text" style="white-space: pre-wrap;">(Your brief explanation/proposal will go here. Please paste the text in the chat, or upload a text file!)</p>
+            <div class="about-steps">
+                <div class="about-step">
+                    <span class="about-step-num">01</span>
+                    <h3>Write</h3>
+                    <p>Check in on the Journal page with a few lines about your day, and add photos if you like.</p>
+                </div>
+                <div class="about-step">
+                    <span class="about-step-num">02</span>
+                    <h3>Read the mood</h3>
+                    <p>An AI model reads each entry and returns its overall tone, how strongly it's felt, and a few themes.</p>
+                </div>
+                <div class="about-step">
+                    <span class="about-step-num">03</span>
+                    <h3>Watch it grow</h3>
+                    <p>Coral and fish appear in colors that match the mood. When a day ends, its entries gather into a memory island with a short reflection.</p>
+                </div>
             </div>
 
-            <div class="journal-entry">
-                <h3 style="margin-bottom: 12px; font-size: 18px;">Project Map</h3>
-                <div style="width: 100%; min-height: 200px; background: rgba(0,0,0,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px dashed rgba(255,255,255,0.4); margin-top: 10px;">
-                    <p style="opacity: 0.6; font-size: 14px; text-align: center; padding: 20px;" id="about-map-placeholder">
-                        (Map image will be placed here. Please upload your map image!)
-                    </p>
-                    <img id="about-map-img" src="" alt="Project Map" style="display: none; width: 100%; height: auto; border-radius: 8px;">
-                </div>
+            <div class="about-card">
+                <h3>The Tank of Echoes</h3>
+                <p>Dive below the reef to find the tank, where a small fish companion is ready to talk. It can see your recent entries, so it can respond to what you actually wrote. It's a gentle listener, not a therapist, and it points you to real support if you need it.</p>
+            </div>
+
+            <div class="about-card">
+                <h3>Why I made it</h3>
+                <p>LUMA REEF started in a Data &amp; AI course as a question: what does emotional data look like when it becomes something you can see, inhabit, and come back to? It's still a work in progress, and I'm refining and expanding it.</p>
+            </div>
+
+            <div class="about-meta">
+                <div><span>Built with</span>Three.js · JavaScript · Gemini API · Vercel</div>
+                <div><span>Your data</span>Entries are saved only in this browser. Entry text is sent to the AI model for mood analysis.</div>
+                <div><span>Made by</span><a href="https://mjipark.github.io/minji-portfolio/" target="_blank" rel="noopener">Minji Park</a></div>
             </div>
         </div>
     </div>
@@ -187,6 +210,7 @@
         </div>
         <div class="guide-bar-text" id="guide-bar-text"></div>
         <div class="guide-bar-hint"><span class="key-cap">SPACE</span> to skip</div>
+        <div class="guide-bar-hint-touch">Tap to close</div>
     </div>
 
     <!-- Talk-to-a-fish button: only shown while inside the Tank (tank scene) -->
