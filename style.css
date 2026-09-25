@@ -2197,3 +2197,124 @@ body, #ui-layer, .journal-page, .guide-bar, .side-panel, .island-widget,
 
 /* Hide the Talk to a fish button while the chat is open */
 body:has(#chat-panel:not(.hidden)) .talk-to-fish-btn { opacity: 0; pointer-events: none; }
+
+
+/* ==========================================================================
+   Real-time sky + cinematic layer (atmosphere.js)
+   ========================================================================== */
+#start-overlay {
+    background: linear-gradient(to bottom, var(--sky-top, #d9eeec), var(--sky-bottom, #d9eeec));
+    transition: opacity 2s ease, background 1.5s ease;
+}
+body.sky-dark .brand h1 { color: #eaf6f4; }
+body.sky-dark .brand p, body.sky-dark .cube-hint { color: rgba(234, 246, 244, 0.75); }
+body { background-color: var(--sky-bottom, #d9eeec); }
+
+#sky-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 55%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 55%);
+}
+#sky-stars {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1px; height: 1px;
+    border-radius: 50%;
+    transition: opacity 3s ease;
+    animation: twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { filter: brightness(0.8); } to { filter: brightness(1.25); } }
+#sky-orb {
+    position: absolute;
+    width: 38vmin; height: 38vmin;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 246, 225, 0.95) 0%, rgba(255, 222, 170, 0.45) 14%, rgba(255, 210, 160, 0.12) 38%, transparent 68%);
+    mix-blend-mode: screen;
+    transition: left 3s ease, top 3s ease;
+}
+#sky-orb.moon {
+    width: 26vmin; height: 26vmin;
+    background: radial-gradient(circle, rgba(236, 244, 255, 0.95) 0%, rgba(200, 222, 255, 0.35) 12%, rgba(170, 200, 240, 0.1) 35%, transparent 65%);
+}
+
+/* Giant word naming the time of day, laid over the scene like a film title */
+#sky-word {
+    position: absolute;
+    left: 50%;
+    bottom: 3vh;
+    transform: translate(-50%, 20px);
+    z-index: 2;
+    pointer-events: none;
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(96px, 19vw, 320px);
+    line-height: 0.8;
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 1.6s ease, transform 1.6s ease;
+}
+#sky-word.show { opacity: 1; transform: translate(-50%, 0); }
+body.sky-dark #sky-word { color: rgba(200, 245, 238, 0.14); }
+
+/* Live sky caption under the reef title */
+#sky-caption {
+    margin-top: 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+}
+body.sky-dark #ui-layer { color: #ffffff; }
+body.sky-dark #ui-layer #status-text {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+}
+
+/* Scroll-to-dive cue */
+#dive-cue {
+    position: fixed;
+    left: 32px;
+    bottom: 32px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    color: var(--lr-ink, #24423f);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+body.sky-dark #dive-cue { color: rgba(255, 255, 255, 0.85); }
+#dive-cue.show { opacity: 0.9; }
+#dive-cue i {
+    display: block;
+    width: 1px;
+    height: 44px;
+    background: linear-gradient(to bottom, transparent, currentColor, transparent);
+    background-size: 100% 200%;
+    animation: dive-line 1.8s ease-in-out infinite;
+}
+@keyframes dive-line { from { background-position: 0 -100%; } to { background-position: 0 100%; } }
+
+@media (max-width: 768px) {
+    #sky-word { bottom: 170px; font-size: 27vw; }
+    #dive-cue { left: 50%; transform: translateX(-50%); bottom: 104px; }
+    #dive-cue span { font-size: 0; }
+    #dive-cue span::after { content: 'Swipe up to dive'; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #sky-stars, #dive-cue i { animation: none; }
+}

@@ -1,7 +1,7 @@
 // LumaReef Service Worker
 // Caches all static assets for offline use so the app works without internet.
 
-const CACHE_NAME = 'lumareef-v2';
+const CACHE_NAME = 'lumareef-v3';
 
 // All files to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -9,6 +9,7 @@ const PRECACHE_ASSETS = [
   './index.html',
   './style.css',
   './app.js',
+  './atmosphere.js',
   './journal.js',
   './tank.js',
   './islands.js',
@@ -61,8 +62,8 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.startsWith('chrome-extension://')) return;
 
-  // Never cache API calls.
-  if (event.request.url.includes('/api/')) return;
+  // Never cache API calls or live weather.
+  if (event.request.url.includes('/api/') || event.request.url.includes('open-meteo.com')) return;
 
   // Network-first for the app's own files, so updates show up right away
   // (cache-first kept serving old, broken versions to returning visitors).

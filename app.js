@@ -384,8 +384,9 @@ function animate() {
     const elapsedTime = clock.getElapsedTime();
 
     if (activeScene === 'reef') {
-        const color1 = new THREE.Color(0x76ABAE);
-        const color2 = new THREE.Color(0x88BDBD);
+        const sky = window.LumaSky && window.LumaSky.look;
+        const color1 = new THREE.Color(sky ? sky.water1 : 0x76ABAE);
+        const color2 = new THREE.Color(sky ? sky.water2 : 0x88BDBD);
         // Sine wave creates the oscillation, mapped from -1..1 to 0..1
         const mix = (Math.sin(elapsedTime * 0.5) + 1) / 2;
         waterMaterials[2].color.copy(color1).lerp(color2, mix);
@@ -393,15 +394,19 @@ function animate() {
         cameraY += ((isSubmerged ? submergedHeight : fixedHeight) - cameraY) * 0.05;
         // Interpolating via angles directly keeps the camera locked to a steady orbit path
         currentAngle += (targetAngle - currentAngle) * 0.07; 
+        // Slow cinematic drift: the camera leans toward the pointer and breathes a little
+        const px = window.LumaSky ? window.LumaSky.parallaxX : 0;
+        const py = window.LumaSky ? window.LumaSky.parallaxY : 0;
+        const driftAngle = currentAngle + px * 0.12 + Math.sin(elapsedTime * 0.12) * 0.03;
         
         // Scale horizontal distance down smoothly as the camera approaches the top view peak
         const topApproachFactor = (currentHeight - baseHeight) / (topHeight - baseHeight);
         const orbitScale = THREE.MathUtils.lerp(1.0, 0.0, topApproachFactor);
         
-        const posX = Math.cos(currentAngle) * cameraRadius * orbitScale;
-        const posZ = Math.sin(currentAngle) * cameraRadius * orbitScale;
+        const posX = Math.cos(driftAngle) * cameraRadius * orbitScale;
+        const posZ = Math.sin(driftAngle) * cameraRadius * orbitScale;
         
-        camera.position.set(posX, cameraY, posZ);
+        camera.position.set(posX, cameraY + py * 0.6, posZ);
         
         // Seamless camera up-vector adjustment prevents rolling/shifting distortions
         camera.lookAt(0.1, -0.5, 0.1);
@@ -445,12 +450,15 @@ function animate() {
         }
         
         // Let CSS handle the background gradient smoothly. We just tell the renderer.
-        document.getElementById('canvas-container').style.background = isSubmerged ? 
-            'linear-gradient(to bottom, #001524, #003566)' : 
-            'linear-gradient(to bottom, #a9dadc, #a0d5d8)'; // same tone as the water, so no sky wedges show in the corners
+        // Sky colours come from atmosphere.js (real local time + weather)
+        const skyState = window.LumaSky;
+        document.getElementById('canvas-container').style.background = isSubmerged ?
+            ((skyState && skyState.deepGradient) || 'linear-gradient(to bottom, #001524, #003566)') :
+            ((skyState && skyState.skyGradient) || 'linear-gradient(to bottom, #a9dadc, #a0d5d8)');
+        if (skyState && skyState.tick) skyState.tick();
         const uiLayer = document.getElementById('ui-layer');
         if (uiLayer) {
-            const onDark = isSubmerged || (typeof activeScene !== 'undefined' && activeScene === 'tank');
+            const onDark = isSubmerged || (typeof activeScene !== 'undefined' && activeScene === 'tank') || document.body.classList.contains('sky-dark');
             uiLayer.classList.toggle('on-dark', onDark);
         }
 
