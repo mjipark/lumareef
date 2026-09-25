@@ -391,7 +391,15 @@ function animate() {
         const mix = (Math.sin(elapsedTime * 0.5) + 1) / 2;
         waterMaterials[2].color.copy(color1).lerp(color2, mix);
 
-        cameraY += ((isSubmerged ? submergedHeight : fixedHeight) - cameraY) * 0.05;
+        // The camera no longer drops through the water (that exposed the edges
+        // of the water block). Diving is now a slow push-in + soft blur, and
+        // the aquarium fades in from a pastel veil.
+        cameraY += (fixedHeight - cameraY) * 0.05;
+        const targetZoom = isSubmerged ? 2.6 : 1;
+        if (Math.abs(camera.zoom - targetZoom) > 0.001) {
+            camera.zoom += (targetZoom - camera.zoom) * 0.05;
+            camera.updateProjectionMatrix();
+        }
         // Interpolating via angles directly keeps the camera locked to a steady orbit path
         currentAngle += (targetAngle - currentAngle) * 0.07; 
         // Slow cinematic drift: the camera leans toward the pointer and breathes a little
@@ -452,27 +460,25 @@ function animate() {
         // Let CSS handle the background gradient smoothly. We just tell the renderer.
         // Sky colours come from atmosphere.js (real local time + weather)
         const skyState = window.LumaSky;
-        document.getElementById('canvas-container').style.background = isSubmerged ?
-            ((skyState && skyState.deepGradient) || 'linear-gradient(to bottom, #001524, #003566)') :
-            ((skyState && skyState.skyGradient) || 'linear-gradient(to bottom, #a9dadc, #a0d5d8)');
+        document.getElementById('canvas-container').style.background =
+            (skyState && skyState.skyGradient) || 'linear-gradient(to bottom, #a9dadc, #a0d5d8)';
         if (skyState && skyState.tick) skyState.tick();
         const uiLayer = document.getElementById('ui-layer');
         if (uiLayer) {
-            const onDark = isSubmerged || (typeof activeScene !== 'undefined' && activeScene === 'tank') || document.body.classList.contains('sky-dark');
+            const onDark = document.body.classList.contains('sky-dark');
             uiLayer.classList.toggle('on-dark', onDark);
         }
 
         // If submerged, we fade out the clouds and scale up the water presence
-        clouds.forEach(cloud => {
-            cloud.visible = !isSubmerged; 
-        });
+
 
         renderer.render(scene, camera);
 
         // Once the camera has settled near the bottom of its dive, trigger the fade to the fish tank
-        if (isSubmerged && cameraY < submergedHeight + 0.15 && !window._tankTransitionStarted) {
+        if (isSubmerged && !window._tankTransitionStarted) {
             window._tankTransitionStarted = true;
-            transitionToFishTank();
+            document.body.classList.add('diving');
+            setTimeout(transitionToFishTank, 900);
         }
         if (!isSubmerged) {
             window._tankTransitionStarted = false;

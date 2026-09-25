@@ -1,5 +1,5 @@
 // interactions.js - Small interactions that make the site feel alive
-//   1. Nav: a sliding pill follows the active section; items lean toward the cursor
+//   1. Nav: a small capsule; its menu button opens a full-screen index of places
 //   2. Orb: the glowing orb in the nav opens the fish chat from anywhere
 //   3. Pages open as a circle that grows out of the button you pressed
 //   4. Headlines rise in word by word
@@ -12,33 +12,46 @@
     const fine = window.matchMedia('(pointer: fine)').matches;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ---- 1. Nav indicator + magnetic items ----------------------------------------
+    // ---- 1. Menu: the capsule's button opens a full-screen index -------------------
     const nav = document.querySelector('.side-nav');
-    const indicator = nav && nav.querySelector('.nav-indicator');
-    function moveIndicator() {
-        if (!nav || !indicator) return;
-        const active = nav.querySelector('button[data-nav].active');
-        if (!active) { indicator.style.opacity = '0'; return; }
-        const n = nav.getBoundingClientRect(), r = active.getBoundingClientRect();
-        indicator.style.opacity = '1';
-        indicator.style.width = r.width + 'px';
-        indicator.style.height = r.height + 'px';
-        indicator.style.transform = `translate(${r.left - n.left}px, ${r.top - n.top}px)`;
+    const toggle = document.getElementById('menu-toggle');
+    const sectionLabel = document.getElementById('capsule-section');
+    function setMenu(open) {
+        document.body.classList.toggle('menu-open', open);
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        }
+        if (open) {
+            const sky = document.getElementById('sky-caption');
+            const foot = document.getElementById('menu-sky');
+            if (sky && foot && sky.textContent) foot.textContent = sky.textContent;
+        }
     }
+    if (toggle) toggle.addEventListener('click', e => { e.stopPropagation(); setMenu(!document.body.classList.contains('menu-open')); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
     if (nav) {
-        new MutationObserver(moveIndicator).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
-        window.addEventListener('resize', moveIndicator);
-        setTimeout(moveIndicator, 300);
-        nav.addEventListener('transitionend', moveIndicator);
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
-        nav.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('pointermove', e => {
-                if (!fine) return;
-                const r = btn.getBoundingClientRect();
-                const dx = (e.clientX - (r.left + r.width / 2)) * 0.25, dy = (e.clientY - (r.top + r.height / 2)) * 0.25;
-                btn.style.transform = `translate(${dx}px, ${dy}px)`;
-            });
-            btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
+        // Capture phase: app.js stops propagation on the nav buttons
+        nav.addEventListener('click', e => {
+            const btn = e.target.closest('button[data-nav]');
+            if (btn) setTimeout(() => setMenu(false), 120);
+            else if (e.target === nav || e.target.classList.contains('menu-inner')) setMenu(false);
+        }, true);
+        // Keep the capsule's label in sync with the active place
+        const syncLabel = () => {
+            const active = nav.querySelector('button[data-nav].active');
+            if (active && sectionLabel && sectionLabel.textContent !== active.dataset.label) {
+                sectionLabel.classList.remove('swap');
+                void sectionLabel.offsetWidth;
+                sectionLabel.textContent = active.dataset.label;
+                sectionLabel.classList.add('swap');
+            }
+        };
+        new MutationObserver(syncLabel).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        // Hovering one place softly dims the others
+        nav.querySelectorAll('button[data-nav]').forEach(btn => {
+            btn.addEventListener('pointerenter', () => nav.classList.add('has-hover'));
+            btn.addEventListener('pointerleave', () => nav.classList.remove('has-hover'));
         });
     }
 
@@ -171,7 +184,7 @@
 
     // ---- 8. Magnetic buttons ---------------------------------------------------------
     if (fine && !reduced) {
-        document.querySelectorAll('.enter-btn-primary, .notebook-save-btn, .sound-toggle').forEach(btn => {
+        document.querySelectorAll('.notebook-save-btn, .sound-toggle, .nav-orb, .menu-toggle').forEach(btn => {
             btn.addEventListener('pointermove', e => {
                 const r = btn.getBoundingClientRect();
                 btn.style.translate = `${(e.clientX - (r.left + r.width / 2)) * 0.2}px ${(e.clientY - (r.top + r.height / 2)) * 0.3}px`;

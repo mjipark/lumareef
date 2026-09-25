@@ -32,37 +32,46 @@
 </head>
 <body>
 
+    <!-- Nav: a small capsule at the bottom (menu · where you are · talk orb).
+         The menu opens a full-screen index of the four places. app.js still
+         drives navigation through the [data-nav] buttons inside .side-nav. -->
     <nav class="top-nav">
-        <div class="nav-logo">LUMA REEF</div>
+        <div class="nav-capsule">
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false">
+                <span></span><span></span>
+            </button>
+            <div class="capsule-title" aria-live="polite">
+                <span class="capsule-brand">Luma Reef</span>
+                <span class="capsule-section" id="capsule-section">Reef</span>
+            </div>
+            <button type="button" class="nav-orb" id="nav-orb" aria-label="Talk to a fish">
+                <span class="orb" aria-hidden="true"><i></i></span>
+            </button>
+        </div>
     </nav>
 
-    <!-- Floating vertical pill nav, docked to the right edge, for wide/iPad-style
-         screens. Same data-nav buttons as before, just relocated out of the
-         top bar -- app.js's click handler selects buttons by [data-nav], so
-         no behavior changes, only position/orientation. -->
-    <nav class="side-nav" aria-label="Main">
-        <span class="nav-indicator" aria-hidden="true"></span>
-        <ul class="nav-links">
-            <li><button type="button" class="active" data-nav="home" aria-label="Home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
-                <span>Reef</span>
-            </button></li>
-            <li><button type="button" data-nav="sanctuary" aria-label="Aquarium">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><path d="M3 11c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><circle cx="9" cy="6" r="2"/><path d="M11 6c1.8 0 3 .8 3 2"/></svg>
-                <span>Aquarium</span>
-            </button></li>
-            <li class="nav-orb-li"><button type="button" class="nav-orb" id="nav-orb" aria-label="Talk to a fish">
-                <span class="orb" aria-hidden="true"><i></i></span>
-            </button></li>
-            <li><button type="button" data-nav="journal" aria-label="Journal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L12 18l-3.5 1.87A1 1 0 0 1 7 19V6a2 2 0 0 1-1-2Z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/></svg>
-                <span>Journal</span>
-            </button></li>
-            <li><button type="button" data-nav="about" aria-label="About">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                <span>About</span>
-            </button></li>
-        </ul>
+    <nav class="side-nav" id="menu" aria-label="Main">
+        <div class="menu-inner">
+            <p class="menu-eyebrow mono">Where to?</p>
+            <ul class="nav-links">
+                <li><button type="button" class="active" data-nav="home" data-label="Reef">
+                    <em class="menu-num mono">01</em><span class="menu-name">Reef</span><small class="menu-desc mono">Your island, under your real sky</small>
+                </button></li>
+                <li><button type="button" data-nav="sanctuary" data-label="Aquarium">
+                    <em class="menu-num mono">02</em><span class="menu-name">Aquarium</span><small class="menu-desc mono">Every day you wrote, drifting below</small>
+                </button></li>
+                <li><button type="button" data-nav="journal" data-label="Journal">
+                    <em class="menu-num mono">03</em><span class="menu-name">Journal</span><small class="menu-desc mono">Write today, revisit any day</small>
+                </button></li>
+                <li><button type="button" data-nav="about" data-label="About">
+                    <em class="menu-num mono">04</em><span class="menu-name">About</span><small class="menu-desc mono">How the reef grows</small>
+                </button></li>
+            </ul>
+            <div class="menu-foot mono">
+                <span id="menu-sky">Luma Reef</span>
+                <a href="https://mjipark.github.io/minji-portfolio/" target="_blank" rel="noopener">Made by Minji Park ↗</a>
+            </div>
+        </div>
     </nav>
 
     <div id="start-overlay">
@@ -79,14 +88,7 @@
             <img src="assets/Island.png" alt="Luma reef voxel island cross-section" class="cube-image" id="cube-image">
         </div>
 
-        <div class="enter-choices" id="enter-choices">
-            <button type="button" class="enter-btn enter-btn-primary" id="enter-sound">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-                Enter with sound
-            </button>
-            <button type="button" class="enter-btn enter-btn-quiet" id="enter-silent">Enter without sound</button>
-        </div>
-        <p class="cube-hint" id="cube-hint">or tap the island</p>
+        <p class="cube-hint" id="cube-hint">Click on the island to begin</p>
     </div>
 
     <button type="button" id="sound-toggle" class="sound-toggle" aria-label="Mute sound" title="Sound on / off">
